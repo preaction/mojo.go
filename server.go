@@ -6,6 +6,7 @@ import (
 
 type Server struct {
 	raw http.Server
+	App *Application
 }
 
 func (srv *Server) ListenAndServe() error {
@@ -14,17 +15,16 @@ func (srv *Server) ListenAndServe() error {
 }
 
 func (srv *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	req := Request{raw: r}
+	tx := Transaction{
+		Req: Request{raw: r},
+		// XXX: Handle streaming writes?
+	}
 
-	// XXX: This should be handled by the Application class
-	// XXX: Instantiate appropriate controller type
-	c := Controller{Req: &req, Res: &Response{}}
-
-	// XXX: Look up route and call handler
-	c.Res.Code = 200
+	// XXX: Capture panics?
+	srv.App.Handler(&tx)
 
 	// Write the response
 	// XXX: Copy response headers
-	w.WriteHeader(c.Res.Code)
+	w.WriteHeader(tx.Res.Code)
 	w.Write([]byte("Hello, World!"))
 }

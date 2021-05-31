@@ -5,6 +5,8 @@ import (
 )
 
 func main() {
-	srv := mojo.Server{}
+	srv := mojo.Server{
+		App: &mojo.Application{},
+	}
 	srv.ListenAndServe()
 }
