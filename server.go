@@ -17,14 +17,9 @@ func (srv *Server) ListenAndServe() error {
 func (srv *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	tx := Transaction{
 		Req: Request{raw: r},
-		// XXX: Handle streaming writes?
+		Res: Response{raw: w},
 	}
 
 	// XXX: Capture panics?
 	srv.App.Handler(&tx)
-
-	// Write the response
-	// XXX: Copy response headers
-	w.WriteHeader(tx.Res.Code)
-	w.Write([]byte("Hello, World!"))
 }

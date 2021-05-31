@@ -11,4 +11,9 @@ func (app *Application) Handler(tx *Transaction) {
 
 	// XXX: Look up route and call handler
 	c.Res.Code = 200
+
+	// Write the response
+	// XXX: Copy response headers
+	tx.Res.raw.WriteHeader(c.Res.Code)
+	tx.Res.raw.Write([]byte("Hello, World!"))
 }
