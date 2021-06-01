@@ -9,8 +9,12 @@ import (
 // Routes stores the application routes and handles matching routes to
 // incoming requests
 type Routes struct {
-	routes []Route
+	routes []*Route
 }
+
+// Handler handles an incoming request. Handlers can modify the stash or
+// response for subsequent handlers or render a response body.
+type Handler func(*Controller)
 
 // Route is a single endpoint
 type Route struct {
@@ -18,6 +22,7 @@ type Route struct {
 	Methods  util.StringSlice
 	Pattern  *regexp.Regexp
 	Defaults map[string]interface{}
+	Handler  Handler
 }
 
 // Match is a set of route destinations for a given request
@@ -28,9 +33,9 @@ type Match struct {
 
 func (rs *Routes) Any(methods []string, pattern string) *Route {
 	// XXX: Transform pattern to regexp with named placeholders
-	r := Route{Methods: methods, Pattern: regexp.MustCompile(pattern)}
+	r := &Route{Methods: methods, Pattern: regexp.MustCompile(pattern)}
 	rs.routes = append(rs.routes, r)
-	return &r
+	return r
 }
 
 func (rs *Routes) Get(pattern string) *Route {
@@ -64,12 +69,14 @@ func (rs *Routes) Match(c *Controller) {
 		if regexpMatch == nil {
 			continue
 		}
+		// XXX: Add Route defaults to stash
+		// XXX: Add placeholder values to stash
 
 		// Matched!
 		if c.Match == nil {
 			c.Match = &Match{}
 		}
-		c.Match.Append(&r)
+		c.Match.Append(r)
 
 		// XXX: If there are child routes of this route (Under), try to
 		// append to the match stack
@@ -78,14 +85,25 @@ func (rs *Routes) Match(c *Controller) {
 
 func (rs *Routes) Dispatch(c *Controller) {
 	rs.Match(c)
-	// XXX: Call handler in matched Route objects
+	// Call handler in matched Route objects
+	// XXX: Does this handle async correctly?
+	for _, r := range c.Match.Stack {
+		// XXX: Create mojo.Log w/ Error, Warning, Info, Debug, Trace
+		if r.Handler != nil {
+			r.Handler(c)
+		}
+	}
 }
 
-func (r *Route) To(defaults map[string]interface{}) *Route {
+func (r *Route) To(handler Handler) *Route {
+	r.Handler = handler
+	return r
+}
+
+func (r *Route) Stash(defaults map[string]interface{}) {
 	for key, val := range defaults {
 		r.Defaults[key] = val
 	}
-	return r
 }
 
 func (m *Match) Append(r *Route) {
