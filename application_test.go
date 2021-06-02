@@ -12,9 +12,24 @@ import (
 func TestApplication(t *testing.T) {
 	app := mojo.Application{}
 	app.Routes.Get("/").To(func(c *mojo.Context) { c.Res.Body = "Hello, World!" })
-	mt := mojotest.Tester{T: t, App: &app}
 
+	mt := mojotest.Tester{T: t, App: &app}
 	mt.GetOk("/", "Can get root").StatusIs(200)
+}
+
+func TestApplicationHookBeforeDispatch(t *testing.T) {
+	app := mojo.Application{}
+	app.Hook(mojo.BeforeDispatch, func(c *mojo.Context) { c.Stash["who"] = "Mojolicious" })
+	app.Hook(mojo.AfterDispatch, func(c *mojo.Context) {
+		c.Res.Body = fmt.Sprintf("%s\n... and Goodbye!", c.Res.Body)
+	})
+	app.Routes.Get("/").To(func(c *mojo.Context) {
+		c.Res.Body = fmt.Sprintf("Hello, %s!", c.Stash["who"])
+	})
+
+	mt := mojotest.Tester{T: t, App: &app}
+	mt.GetOk("/", "Can get root").StatusIs(200)
+	mt.TextIs("Hello, Mojolicious!\n... and Goodbye!")
 }
 
 func ExampleApplicationHelloWorld() {

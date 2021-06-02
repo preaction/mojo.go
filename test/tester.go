@@ -39,13 +39,18 @@ func (t *Tester) GetOk(path string, name ...string) *Tester {
 
 	defer func() {
 		if r := recover(); r != nil {
-			t.T.Errorf("Failed test '%s': Panic in route handler: %v", name[0], r)
-			t.Success = false
+			t.errorf(name, "Panic in route handler: %v", r)
 		}
 	}()
-	t.App.Handler(&c)
 	t.Success = true
+	t.App.Handler(&c)
 	return t
+}
+
+// errorf prints the formatted error and updates the Success flag
+func (t *Tester) errorf(name []string, text string, args ...interface{}) {
+	t.T.Errorf("Failed test '%s': %s", name[0], fmt.Sprintf(text, args...))
+	t.Success = false
 }
 
 // StatusIs tests the status code of the current request.
@@ -57,19 +62,36 @@ func (t *Tester) StatusIs(code int, name ...string) *Tester {
 	}
 
 	if t.Context.Res.Code != code {
-		t.T.Errorf("Failed test '%s': Status %d != %d", name[0], t.Context.Res.Code, code)
-		t.Success = false
-	} else {
-		t.Success = true
+		t.errorf(name, "Status %d != %d", t.Context.Res.Code, code)
+		return t
 	}
+
+	t.Success = true
 	return t
 }
 
-// hasRes returns true if there is a current request to test
+// TextIs tests the response body of the current request equals the
+// given text
+func (t *Tester) TextIs(text string, name ...string) *Tester {
+	t.T.Helper()
+	fillName(&name, "Response text")
+	if !t.hasRes(name) {
+		return t
+	}
+
+	if t.Context.Res.Body != text {
+		t.errorf(name, "Text is not equal:\n\tExpect: %s\n\tGot: %s", text, t.Context.Res.Body)
+		return t
+	}
+	t.Success = true
+	return t
+}
+
+// hasRes returns true if there is a current request to test, updating
+// the Success flag if not
 func (t *Tester) hasRes(name []string) bool {
 	if t.Context == nil || t.Context.Res == nil {
-		t.T.Errorf("Failed test '%s': Status is nil", name[0])
-		t.Success = false
+		t.errorf(name, "Status is nil")
 		return false
 	}
 	return true
@@ -77,7 +99,7 @@ func (t *Tester) hasRes(name []string) bool {
 
 // fillName fills in a default name for a test if needed
 func fillName(name *[]string, defaultName string) {
-	if name == nil {
+	if name == nil || len(*name) == 0 {
 		*name = []string{defaultName}
 	}
 }
