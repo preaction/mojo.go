@@ -5,7 +5,7 @@ import (
 )
 
 type Response struct {
-	raw     http.ResponseWriter
+	Writer  http.ResponseWriter
 	msg     Message
 	Code    int
 	Message string

@@ -14,12 +14,26 @@ func (srv *Server) ListenAndServe() error {
 	return srv.raw.ListenAndServe()
 }
 
-func (srv *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	tx := Transaction{
-		Req: Request{raw: r},
-		Res: Response{raw: w},
+func (srv *Server) BuildRequest(r *http.Request) *Request {
+	return &Request{
+		raw: r,
+		URL: r.URL,
 	}
+}
 
+func (srv *Server) BuildResponse(w http.ResponseWriter) *Response {
+	return &Response{Writer: w}
+}
+
+func (srv *Server) BuildContext(w http.ResponseWriter, r *http.Request) *Context {
+	c := &Context{
+		Req: srv.BuildRequest(r),
+		Res: srv.BuildResponse(w),
+	}
+	return srv.App.BuildContext(c)
+}
+
+func (srv *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// XXX: Capture panics?
-	srv.App.Handler(&tx)
+	srv.App.Handler(srv.BuildContext(w, r))
 }

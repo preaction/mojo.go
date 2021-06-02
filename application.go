@@ -7,24 +7,29 @@ type Application struct {
 
 // XXX: Use go embed to embed templates and static files
 
-func (app *Application) Handler(tx *Transaction) {
-	// XXX: Instantiate appropriate controller type
-	c := Context{Req: &tx.Req, Res: &tx.Res}
-
+func (app *Application) BuildContext(c *Context) *Context {
+	c.Stash = map[string]interface{}{}
 	// XXX: Add defaults from application
 	// Set default stash values from request
 	// XXX: Add URL to Request
-	c.Stash["path"] = c.Req.raw.URL.Path
+	c.Stash["path"] = c.Req.URL.Path
 
+	// XXX: Invoke afterBuildContext hook
+
+	return c
+}
+
+func (app *Application) Handler(c *Context) {
+	// XXX: Invoke hooks
 	// Look up route and call handler
-	app.Routes.Dispatch(&c)
+	app.Routes.Dispatch(c)
 
+	// Write the response
 	if c.Res.Code == 0 {
 		c.Res.Code = 200
 	}
-
-	// Write the response
 	// XXX: Copy response headers
-	tx.Res.raw.WriteHeader(c.Res.Code)
-	tx.Res.raw.Write([]byte("Hello, World!"))
+	// XXX: Embed writer?
+	c.Res.Writer.WriteHeader(c.Res.Code)
+	c.Res.Writer.Write([]byte("Hello, World!"))
 }

@@ -3,9 +3,19 @@ package mojo_test
 import (
 	"fmt"
 	"net/url"
+	"testing"
 
 	"github.com/preaction/mojo.go"
+	mojotest "github.com/preaction/mojo.go/test"
 )
+
+func TestApplication(t *testing.T) {
+	app := mojo.Application{}
+	app.Routes.Get("/").To(func(*mojo.Context) {})
+	mt := mojotest.Tester{T: t, App: &app}
+
+	mt.GetOk("/", "Can get root").StatusIs(200)
+}
 
 func ExampleApplicationHelloWorld() {
 	app := mojo.Application{}
