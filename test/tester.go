@@ -9,6 +9,9 @@ import (
 	"github.com/preaction/mojo.go"
 )
 
+// Tester is a helper for testing Mojo Applications. Tester wraps
+// a testing.T object and keeps the state of the current request being
+// tested.
 type Tester struct {
 	*testing.T
 	App     *mojo.Application
@@ -16,11 +19,11 @@ type Tester struct {
 	Context *mojo.Context
 }
 
+// GetOk tries a GET request to the given path. This test passes if the
+// request is completed without panicking.
 func (t *Tester) GetOk(path string, name ...string) *Tester {
 	t.T.Helper()
-	if name == nil {
-		name = []string{fmt.Sprintf("GET %d", path)}
-	}
+	fillName(&name, fmt.Sprintf("GET %d", path))
 
 	// XXX: Create mojo.URL wrapper
 	// Everything needs a damned wrapper to be even remotely usable...
@@ -45,19 +48,36 @@ func (t *Tester) GetOk(path string, name ...string) *Tester {
 	return t
 }
 
+// StatusIs tests the status code of the current request.
 func (t *Tester) StatusIs(code int, name ...string) *Tester {
 	t.T.Helper()
-	if name == nil {
-		name = []string{fmt.Sprintf("Status is %d", code)}
+	fillName(&name, fmt.Sprintf("Status is %d", code))
+	if !t.hasRes(name) {
+		return t
 	}
-	if t.Context == nil || t.Context.Res == nil {
-		t.T.Errorf("Failed test '%s': Status is nil", name[0])
-		t.Success = false
-	} else if t.Context.Res.Code != code {
+
+	if t.Context.Res.Code != code {
 		t.T.Errorf("Failed test '%s': Status %d != %d", name[0], t.Context.Res.Code, code)
 		t.Success = false
 	} else {
 		t.Success = true
 	}
 	return t
+}
+
+// hasRes returns true if there is a current request to test
+func (t *Tester) hasRes(name []string) bool {
+	if t.Context == nil || t.Context.Res == nil {
+		t.T.Errorf("Failed test '%s': Status is nil", name[0])
+		t.Success = false
+		return false
+	}
+	return true
+}
+
+// fillName fills in a default name for a test if needed
+func fillName(name *[]string, defaultName string) {
+	if name == nil {
+		*name = []string{defaultName}
+	}
 }
