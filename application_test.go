@@ -11,7 +11,7 @@ import (
 
 func TestApplication(t *testing.T) {
 	app := mojo.Application{}
-	app.Routes.Get("/").To(func(*mojo.Context) {})
+	app.Routes.Get("/").To(func(c *mojo.Context) { c.Res.Body = "Hello, World!" })
 	mt := mojotest.Tester{T: t, App: &app}
 
 	mt.GetOk("/", "Can get root").StatusIs(200)

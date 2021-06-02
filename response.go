@@ -9,4 +9,5 @@ type Response struct {
 	msg     Message
 	Code    int
 	Message string
+	Body    string
 }

@@ -31,5 +31,6 @@ func (app *Application) Handler(c *Context) {
 	// XXX: Copy response headers
 	// XXX: Embed writer?
 	c.Res.Writer.WriteHeader(c.Res.Code)
-	c.Res.Writer.Write([]byte("Hello, World!"))
+	// XXX: Build Body from whatever parts we have
+	c.Res.Writer.Write([]byte(c.Res.Body))
 }
