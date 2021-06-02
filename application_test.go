@@ -9,12 +9,12 @@ import (
 
 func ExampleApplicationHelloWorld() {
 	app := mojo.Application{}
-	app.Routes.Get("/").To(func(*mojo.Controller) { fmt.Print("Hello, World!") })
+	app.Routes.Get("/").To(func(*mojo.Context) { fmt.Print("Hello, World!") })
 
 	// XXX: Create mojo.URL wrapper
 	// Everything needs a damned wrapper to be even remotely usable...
 	url, _ := url.ParseRequestURI("/")
-	c := mojo.Controller{
+	c := mojo.Context{
 		Req: &mojo.Request{Method: "GET", URL: url},
 		Stash: map[string]interface{}{
 			"path": url.Path,

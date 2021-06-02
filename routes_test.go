@@ -18,7 +18,7 @@ func TestRoutesMatch(t *testing.T) {
 		t.Fatalf("Error parsing URL: %v", err)
 	}
 
-	c := mojo.Controller{
+	c := mojo.Context{
 		Req: &mojo.Request{Method: "GET", URL: url},
 		Stash: map[string]interface{}{
 			"path": url.Path,
@@ -34,7 +34,7 @@ func TestRoutesMatch(t *testing.T) {
 
 func TestRoutesHandler(t *testing.T) {
 	handlerCalled := false
-	handler := func(c *mojo.Controller) {
+	handler := func(c *mojo.Context) {
 		handlerCalled = true
 	}
 
@@ -50,7 +50,7 @@ func TestRoutesHandler(t *testing.T) {
 
 	// XXX: Create helper to build controller from transaction
 	// XXX: Create helper to build transaction from method/url
-	c := mojo.Controller{
+	c := mojo.Context{
 		Req: &mojo.Request{Method: "GET", URL: url},
 		Stash: map[string]interface{}{
 			"path": url.Path,

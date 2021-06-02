@@ -14,7 +14,7 @@ type Routes struct {
 
 // Handler handles an incoming request. Handlers can modify the stash or
 // response for subsequent handlers or render a response body.
-type Handler func(*Controller)
+type Handler func(*Context)
 
 // Route is a single endpoint
 type Route struct {
@@ -54,7 +54,7 @@ func (rs *Routes) Delete(pattern string) *Route {
 	return rs.Any([]string{"DELETE"}, pattern)
 }
 
-func (rs *Routes) Match(c *Controller) {
+func (rs *Routes) Match(c *Context) {
 	method := c.Req.Method
 	path := c.Stash["path"].(string)
 
@@ -83,7 +83,7 @@ func (rs *Routes) Match(c *Controller) {
 	}
 }
 
-func (rs *Routes) Dispatch(c *Controller) {
+func (rs *Routes) Dispatch(c *Context) {
 	rs.Match(c)
 	// Call handler in matched Route objects
 	// XXX: Does this handle async correctly?

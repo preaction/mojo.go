@@ -9,7 +9,7 @@ type Application struct {
 
 func (app *Application) Handler(tx *Transaction) {
 	// XXX: Instantiate appropriate controller type
-	c := Controller{Req: &tx.Req, Res: &tx.Res}
+	c := Context{Req: &tx.Req, Res: &tx.Res}
 
 	// XXX: Add defaults from application
 	// Set default stash values from request
