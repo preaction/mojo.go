@@ -7,9 +7,22 @@ In the Mojolicious framework, an author builds an Application object,
 registers handlers for one or more Routes, and then starts the
 application using its (TODO) Start() method.
 
+```go
+package main
+import "github.com/preaction/mojo.go"
+func main() {
+	app := mojo.NewApplication()
+	app.Routes.Get( "/" ).To( RootHandler )
+	app.Start()
+}
+func RootHandler( c *mojo.Context ) {
+	c.Res.Body = "Hello, World!"
+}
+```
+
 ## Sub Packages
 
-* [commands](./commands)
+* [mojo](./mojo)
 
 * [test](./test)
 
