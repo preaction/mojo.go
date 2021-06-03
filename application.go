@@ -35,13 +35,13 @@ const (
 
 // NewApplication builds a basic Mojo application with the default set
 // of commands and (TODO) plugins.
-func NewApplication() Application {
-	app := Application{
+func NewApplication() *Application {
+	app := &Application{
 		Commands: map[string]Command{},
 	}
-	app.Commands["help"] = &HelpCommand{App: &app}
-	app.Commands["version"] = &VersionCommand{App: &app}
-	app.Commands["daemon"] = &DaemonCommand{App: &app}
+	app.Commands["help"] = &HelpCommand{App: app}
+	app.Commands["version"] = &VersionCommand{App: app}
+	app.Commands["daemon"] = &DaemonCommand{App: app}
 	return app
 }
 
@@ -51,7 +51,13 @@ func NewApplication() Application {
 // setting the default stash values from the Application and any stash
 // values that come from the Request
 func (app *Application) BuildContext(c *Context) *Context {
-	c.Stash = map[string]interface{}{}
+	if c.Stash == nil {
+		c.Stash = map[string]interface{}{}
+	}
+	if c.Res == nil {
+		c.Res = &Response{}
+	}
+
 	// XXX: Add defaults from application
 	// Set default stash values from request
 	// XXX: Add URL to Request

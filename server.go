@@ -16,10 +16,9 @@ func (srv *Server) Serve(l net.Listener) error {
 }
 
 func (srv *Server) BuildRequest(r *http.Request) *Request {
-	return &Request{
-		raw: r,
-		URL: r.URL,
-	}
+	req := &Request{}
+	req.Read(r)
+	return req
 }
 
 func (srv *Server) BuildResponse(w http.ResponseWriter) *Response {

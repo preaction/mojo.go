@@ -1,6 +1,7 @@
 package mojo
 
 import (
+	"fmt"
 	"regexp"
 
 	"github.com/preaction/mojo.go/util"
@@ -57,6 +58,8 @@ func (rs *Routes) Delete(pattern string) *Route {
 func (rs *Routes) Match(c *Context) {
 	method := c.Req.Method
 	path := c.Stash["path"].(string)
+	// XXX: Replace with Log
+	fmt.Printf("[debug] %s %s\n", method, path)
 
 	for _, r := range rs.routes {
 		// Check method
@@ -65,6 +68,7 @@ func (rs *Routes) Match(c *Context) {
 		}
 
 		// Check path
+		// BUG: If no children, must match completely (not prefix)
 		regexpMatch := r.Pattern.FindStringSubmatch(path)
 		if regexpMatch == nil {
 			continue
@@ -85,6 +89,13 @@ func (rs *Routes) Match(c *Context) {
 
 func (rs *Routes) Dispatch(c *Context) {
 	rs.Match(c)
+	if c.Match == nil {
+		// XXX: Replace with Log
+		fmt.Printf("[debug] 404 Not Found\n")
+		c.Res.Code = 404
+		c.Res.Message = "Not Found"
+		return
+	}
 	// Call handler in matched Route objects
 	// XXX: Does this handle async correctly?
 	for _, r := range c.Match.Stack {
