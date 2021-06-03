@@ -1,6 +1,7 @@
 package mojo
 
 import (
+	"net"
 	"net/http"
 )
 
@@ -9,9 +10,9 @@ type Server struct {
 	App *Application
 }
 
-func (srv *Server) ListenAndServe() error {
+func (srv *Server) Serve(l net.Listener) error {
 	srv.raw.Handler = srv
-	return srv.raw.ListenAndServe()
+	return srv.raw.Serve(l)
 }
 
 func (srv *Server) BuildRequest(r *http.Request) *Request {

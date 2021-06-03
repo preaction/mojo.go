@@ -1,12 +1,18 @@
 package mojo
 
+import (
+	"fmt"
+	"os"
+)
+
 // Application is the main type for an application to use. Applications
 // register route handlers and hook handlers, and contain all the
 // global application configuration and tools that can be used by those
 // handlers.
 type Application struct {
-	Routes Routes
-	Hooks  map[Hook][]HookHandler
+	Routes   Routes
+	hooks    map[Hook][]HookHandler
+	Commands map[string]Command
 }
 
 // Hook is label for an application event that can have HookHandlers
@@ -27,6 +33,18 @@ const (
 	AfterDispatch Hook = "AfterDispatch"
 )
 
+// NewApplication builds a basic Mojo application with the default set
+// of commands and (TODO) plugins.
+func NewApplication() Application {
+	app := Application{
+		Commands: map[string]Command{},
+	}
+	app.Commands["help"] = &HelpCommand{App: &app}
+	app.Commands["version"] = &VersionCommand{App: &app}
+	app.Commands["daemon"] = &DaemonCommand{App: &app}
+	return app
+}
+
 // XXX: Use go embed to embed templates and static files
 
 // BuildContext fills in the context from its Request object, including
@@ -44,20 +62,20 @@ func (app *Application) BuildContext(c *Context) *Context {
 
 // Hook registers a Hook handler.
 func (app *Application) Hook(hook Hook, handler HookHandler) {
-	if app.Hooks == nil {
-		app.Hooks = map[Hook][]HookHandler{}
+	if app.hooks == nil {
+		app.hooks = map[Hook][]HookHandler{}
 	}
-	if _, ok := app.Hooks[hook]; ok {
-		app.Hooks[hook] = append(app.Hooks[hook], handler)
+	if _, ok := app.hooks[hook]; ok {
+		app.hooks[hook] = append(app.hooks[hook], handler)
 	} else {
-		app.Hooks[hook] = []HookHandler{handler}
+		app.hooks[hook] = []HookHandler{handler}
 	}
 }
 
 // emit emits a hook event with the given context
 // XXX: We may need different arguments for future hooks
 func (app *Application) emit(hook Hook, c *Context) {
-	hooks, ok := app.Hooks[hook]
+	hooks, ok := app.hooks[hook]
 	if !ok {
 		return
 	}
@@ -84,4 +102,16 @@ func (app *Application) Handler(c *Context) {
 	c.Res.Writer.WriteHeader(c.Res.Code)
 	// XXX: Build Body from whatever parts we have
 	c.Res.Writer.Write([]byte(c.Res.Body))
+}
+
+// Start invokes the Application's commands using the arguments given on
+// the command-line.
+func (app *Application) Start() {
+	name := os.Args[1]
+	cmd, ok := app.Commands[name]
+	if !ok {
+		fmt.Printf("Command not found: %s\n", name)
+		os.Exit(1)
+	}
+	cmd.Run(os.Args[2:])
 }
