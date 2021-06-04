@@ -52,6 +52,9 @@ func init() {
 // only digits.
 func (rs *Routes) Any(methods []string, path string) *Route {
 	// Standard placeholders
+	// XXX: Add optional placeholders for stash values defined in the
+	// route defaults. This means waiting to compile the Regexp until
+	// after we do our first Dispatch...
 	// XXX: Add relaxed and wildcard placeholders
 	// XXX: Add restricted placeholders
 	path = stdPlaceholder.ReplaceAllString(path, "$1(?P<$2>[^/.]+)$3")
