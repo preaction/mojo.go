@@ -31,9 +31,32 @@ type Match struct {
 	Position int
 }
 
-func (rs *Routes) Any(methods []string, pattern string) *Route {
-	// XXX: Transform pattern to regexp with named placeholders
-	r := &Route{Methods: methods, Pattern: regexp.MustCompile(pattern)}
+var stdPlaceholder *regexp.Regexp
+
+func init() {
+	stdPlaceholder = regexp.MustCompile("(^|[/<]):([a-zA-Z_]+)($|[/>])")
+}
+
+// Any creates a Route to handle any of the given methods for the given
+// path. The path can contain placeholders which will populate values in
+// the Stash.
+//
+// Standard placeholders begin with ":" and match all characters except
+// for "/" and ".".
+//
+// Placeholders can be enclosed in "<" and ">" to separate them from the
+// surrounding text.
+//
+// If placeholders are not powerful enough, the path can contain named
+// capture groups as a regular expression, like "(?P<name>\d+)" to match
+// only digits.
+func (rs *Routes) Any(methods []string, path string) *Route {
+	// Standard placeholders
+	// XXX: Add relaxed and wildcard placeholders
+	// XXX: Add restricted placeholders
+	path = stdPlaceholder.ReplaceAllString(path, "$1(?P<$2>[^/.]+)$3")
+
+	r := &Route{Methods: methods, Pattern: regexp.MustCompile(path)}
 	rs.routes = append(rs.routes, r)
 	return r
 }
@@ -73,7 +96,14 @@ func (rs *Routes) Match(c *Context) {
 			continue
 		}
 		// XXX: Add Route defaults to stash
-		// XXX: Add placeholder values to stash
+		// Add placeholder values to stash
+		stashNames := r.Pattern.SubexpNames()
+		for i, value := range regexpMatch {
+			if i == 0 {
+				continue
+			}
+			c.Stash[stashNames[i]] = value
+		}
 
 		// Matched!
 		if c.Match == nil {
