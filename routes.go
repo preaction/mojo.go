@@ -1,7 +1,6 @@
 package mojo
 
 import (
-	"fmt"
 	"regexp"
 
 	"github.com/preaction/mojo.go/util"
@@ -59,7 +58,7 @@ func (rs *Routes) Match(c *Context) {
 	method := c.Req.Method
 	path := c.Stash["path"].(string)
 	// XXX: Replace with Log
-	fmt.Printf("[debug] %s %s\n", method, path)
+	//fmt.Printf("[debug] %s %s\n", method, path)
 
 	for _, r := range rs.routes {
 		// Check method
@@ -91,7 +90,7 @@ func (rs *Routes) Dispatch(c *Context) {
 	rs.Match(c)
 	if c.Match == nil {
 		// XXX: Replace with Log
-		fmt.Printf("[debug] 404 Not Found\n")
+		//fmt.Printf("[debug] 404 Not Found\n")
 		c.Res.Code = 404
 		c.Res.Message = "Not Found"
 		return
