@@ -7,3 +7,14 @@ type Context struct {
 	Stash map[string]interface{}
 	Match *Match
 }
+
+// Param returns the given parameter. Stash values take precedence over
+// form values, which take precedence over query parameters. Returns the
+// empty string if the parameter is not found. Panics if the stash value
+// is not a string.
+func (c *Context) Param(name string) string {
+	if value, ok := c.Stash[name]; ok {
+		return value.(string)
+	}
+	return c.Req.Param(name)
+}
