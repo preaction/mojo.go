@@ -3,7 +3,6 @@ package test
 import (
 	"fmt"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 
 	"github.com/preaction/mojo.go"
@@ -25,13 +24,10 @@ func (t *Tester) GetOk(path string, name ...string) *Tester {
 	t.T.Helper()
 	fillName(&name, fmt.Sprintf("GET %d", path))
 
-	// XXX: Create mojo.URL wrapper
-	// Everything needs a damned wrapper to be even remotely usable...
 	// XXX: Create a server to integration test (and in case we want to
 	// turn Application and Server into interfaces in the future)
-	url, _ := url.ParseRequestURI(path)
 	c := mojo.Context{
-		Req: &mojo.Request{Method: "GET", URL: url},
+		Req: mojo.NewRequest("GET", path),
 		Res: &mojo.Response{Writer: httptest.NewRecorder()},
 	}
 	t.App.BuildContext(&c)

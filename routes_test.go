@@ -41,19 +41,11 @@ func TestRoutesHandler(t *testing.T) {
 	r := mojo.Routes{}
 	r.Get("/foo").To(handler)
 
-	// XXX: Create mojo.URL wrapper
-	// Everything needs a damned wrapper to be even remotely usable...
-	url, err := url.ParseRequestURI("/foo")
-	if err != nil {
-		t.Fatalf("Error parsing URL: %v", err)
-	}
-
 	// XXX: Create helper to build controller from transaction
-	// XXX: Create helper to build transaction from method/url
 	c := mojo.Context{
-		Req: &mojo.Request{Method: "GET", URL: url},
+		Req: mojo.NewRequest("GET", "/foo"),
 		Stash: map[string]interface{}{
-			"path": url.Path,
+			"path": "/foo",
 		},
 	}
 

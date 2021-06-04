@@ -1,6 +1,7 @@
 package mojo
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 )
@@ -15,6 +16,17 @@ type Request struct {
 	BodyParams  Parameters
 
 	raw *http.Request
+}
+
+// NewRequest builds a new request object
+func NewRequest(method string, inputURL string) *Request {
+	// XXX: Add body optional argument and auto-populate query or body params as needed
+	requestURL, err := url.ParseRequestURI(inputURL)
+	if err != nil {
+		panic(fmt.Sprintf("Could not parse URL: %v", err))
+	}
+	return &Request{Method: method, URL: requestURL}
+
 }
 
 // Read populates this request from the given http.Request
