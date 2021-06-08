@@ -45,6 +45,10 @@ func init() {
 // Standard placeholders begin with ":" and match all characters except
 // for "/" and ".".
 //
+// Placeholders can be made optional by providing default values in
+// a Stash as an additional argument. Slashes before optional
+// placeholders also become optional.
+//
 // Placeholders can be enclosed in "<" and ">" to separate them from the
 // surrounding text.
 //
@@ -52,6 +56,16 @@ func init() {
 // capture groups as a regular expression, like "(?P<name>\d+)" to match
 // only digits.
 func (rs *Routes) Any(methods []string, path string, opts ...interface{}) *Route {
+	var stash Stash
+	for _, opt := range opts {
+		switch v := opt.(type) {
+		case Stash:
+			stash = v
+		default:
+			panic(fmt.Sprintf("Invalid argument %T", v))
+		}
+	}
+
 	// Standard placeholders
 	// XXX: Add relaxed and wildcard placeholders
 	// XXX: Add restricted placeholders
@@ -70,19 +84,22 @@ func (rs *Routes) Any(methods []string, path string, opts ...interface{}) *Route
 		placeName := path[v[6]:v[7]]
 		end := path[v[8]:v[9]]
 
-		pathPattern += gap + fmt.Sprintf("%s(?P<%s>[^/.]+)%s", start, placeName, end)
-	}
-
-	r := &Route{Methods: methods, Pattern: regexp.MustCompile(pathPattern)}
-	for _, opt := range opts {
-		switch v := opt.(type) {
-		case Stash:
-			r.Defaults = v
-		default:
-			panic(fmt.Sprintf("Invalid argument %T", v))
+		matchType := "+" // required
+		if _, ok := stash[placeName]; ok {
+			matchType = "*" // optional
+			if start == "/" {
+				start += "?"
+			}
 		}
+
+		pathPattern += gap + fmt.Sprintf("%s(?P<%s>[^/.]%s)%s", start, placeName, matchType, end)
 	}
 
+	r := &Route{
+		Methods:  methods,
+		Pattern:  regexp.MustCompile(pathPattern),
+		Defaults: stash,
+	}
 	rs.routes = append(rs.routes, r)
 	return r
 }
@@ -126,7 +143,7 @@ func (rs *Routes) Match(c *Context) {
 		// Add placeholder values to stash
 		stashNames := r.Pattern.SubexpNames()
 		for i, value := range regexpMatch {
-			if i == 0 {
+			if i == 0 || value == "" {
 				continue
 			}
 			c.Stash[stashNames[i]] = value
