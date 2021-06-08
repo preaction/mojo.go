@@ -1,6 +1,7 @@
 package mojo
 
 import (
+	"fmt"
 	"regexp"
 
 	"github.com/preaction/mojo.go/util"
@@ -34,7 +35,7 @@ type Match struct {
 var stdPlaceholder *regexp.Regexp
 
 func init() {
-	stdPlaceholder = regexp.MustCompile("(^|[/<]):([a-zA-Z_]+)($|[/>])")
+	stdPlaceholder = regexp.MustCompile("(^|[/<])([:])([a-zA-Z_]+)($|[/>])")
 }
 
 // Any creates a Route to handle any of the given methods for the given
@@ -52,14 +53,27 @@ func init() {
 // only digits.
 func (rs *Routes) Any(methods []string, path string) *Route {
 	// Standard placeholders
-	// XXX: Add optional placeholders for stash values defined in the
-	// route defaults. This means waiting to compile the Regexp until
-	// after we do our first Dispatch...
 	// XXX: Add relaxed and wildcard placeholders
 	// XXX: Add restricted placeholders
-	path = stdPlaceholder.ReplaceAllString(path, "$1(?P<$2>[^/.]+)$3")
+	pathPattern := ""
+	lastIndex := 0
+	for _, v := range stdPlaceholder.FindAllStringSubmatchIndex(path, -1) {
+		// v is an array of pairs of ints. Each pair is start and end
+		// indexes of the match in the string. The first pair is the
+		// entire match, and other pairs are the corresponding
+		// submatches
+		gap := path[lastIndex:v[0]]
+		lastIndex = v[1]
 
-	r := &Route{Methods: methods, Pattern: regexp.MustCompile(path)}
+		start := path[v[2]:v[3]]
+		//placeType := path[v[4]:v[5]]
+		placeName := path[v[6]:v[7]]
+		end := path[v[8]:v[9]]
+
+		pathPattern += gap + fmt.Sprintf("%s(?P<%s>[^/.]+)%s", start, placeName, end)
+	}
+
+	r := &Route{Methods: methods, Pattern: regexp.MustCompile(pathPattern)}
 	rs.routes = append(rs.routes, r)
 	return r
 }
