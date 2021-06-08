@@ -1,22 +1,18 @@
 package mojo_test
 
 import (
-	"net/http/httptest"
 	"testing"
 
 	"github.com/preaction/mojo.go"
+	mojotest "github.com/preaction/mojo.go/test"
 )
 
 func TestRoutesMatch(t *testing.T) {
-	app := mojo.NewApplication()
-	r := app.Routes
-	r.Get("/foo")
+	router := &mojo.Routes{}
+	router.Get("/foo")
 
-	req := mojo.NewRequest("GET", "/foo")
-	res := &mojo.Response{}
-	c := app.BuildContext(req, res)
-
-	r.Dispatch(c)
+	c := mojotest.NewContext(t, mojo.NewRequest("GET", "/foo"))
+	router.Dispatch(c)
 
 	if c.Match == nil {
 		t.Errorf("No route found for request: %v", c.Req)
@@ -29,14 +25,11 @@ func TestRoutesHandler(t *testing.T) {
 		handlerCalled = true
 	}
 
-	app := mojo.NewApplication()
-	app.Routes.Get("/foo").To(handler)
+	router := &mojo.Routes{}
+	router.Get("/foo").To(handler)
 
-	req := mojo.NewRequest("GET", "/foo")
-	res := &mojo.Response{}
-	c := app.BuildContext(req, res)
-
-	app.Routes.Dispatch(c)
+	c := mojotest.NewContext(t, mojo.NewRequest("GET", "/foo"))
+	router.Dispatch(c)
 
 	if !handlerCalled {
 		t.Errorf("Route handler not called by Dispatch()")
@@ -53,14 +46,11 @@ func TestRoutesStash(t *testing.T) {
 		handlerCalled = true
 	}
 
-	app := mojo.NewApplication()
-	app.Routes.Get("/foo", mojo.Stash{"foo": "bar"}).To(handler)
+	router := &mojo.Routes{}
+	router.Get("/foo", mojo.Stash{"foo": "bar"}).To(handler)
 
-	req := mojo.NewRequest("GET", "/foo")
-	res := &mojo.Response{}
-	c := app.BuildContext(req, res)
-
-	app.Routes.Dispatch(c)
+	c := mojotest.NewContext(t, mojo.NewRequest("GET", "/foo"))
+	router.Dispatch(c)
 
 	if !handlerCalled {
 		t.Errorf("Route handler not called by Dispatch()")
@@ -88,14 +78,11 @@ func TestRoutesStandardPlaceholder(t *testing.T) {
 		handlerCalled = true
 	}
 
-	app := mojo.NewApplication()
-	app.Routes.Get("/foo/:name").To(handler)
+	router := &mojo.Routes{}
+	router.Get("/foo/:name").To(handler)
 
-	req := mojo.NewRequest("GET", "/foo/morbo")
-	res := &mojo.Response{Writer: httptest.NewRecorder()}
-	c := app.BuildContext(req, res)
-
-	app.Routes.Dispatch(c)
+	c := mojotest.NewContext(t, mojo.NewRequest("GET", "/foo/morbo"))
+	router.Dispatch(c)
 
 	if !handlerCalled {
 		t.Errorf("Route handler not called by Dispatch()")
@@ -113,14 +100,11 @@ func TestRoutesDelimitedPlaceholder(t *testing.T) {
 		handlerCalled = true
 	}
 
-	app := mojo.NewApplication()
-	app.Routes.Get("/hello_<:name>").To(handler)
+	router := &mojo.Routes{}
+	router.Get("/hello_<:name>").To(handler)
 
-	req := mojo.NewRequest("GET", "/hello_world")
-	res := &mojo.Response{Writer: httptest.NewRecorder()}
-	c := app.BuildContext(req, res)
-
-	app.Routes.Dispatch(c)
+	c := mojotest.NewContext(t, mojo.NewRequest("GET", "/hello_world"))
+	router.Dispatch(c)
 
 	if !handlerCalled {
 		t.Errorf("Route handler not called by Dispatch()")
@@ -140,14 +124,11 @@ func TestRoutesOptionalPlaceholder(t *testing.T) {
 		handlerCalled = true
 	}
 
-	app := mojo.NewApplication()
-	app.Routes.Get("/foo/:foo", mojo.Stash{"foo": "bar"}).To(handler)
+	router := &mojo.Routes{}
+	router.Get("/foo/:foo", mojo.Stash{"foo": "bar"}).To(handler)
 
-	req := mojo.NewRequest("GET", "/foo/")
-	res := &mojo.Response{}
-	c := app.BuildContext(req, res)
-
-	app.Routes.Dispatch(c)
+	c := mojotest.NewContext(t, mojo.NewRequest("GET", "/foo/"))
+	router.Dispatch(c)
 
 	if !handlerCalled {
 		t.Errorf("Route handler not called by Dispatch()")
@@ -166,13 +147,13 @@ func TestRoutesOptionalPlaceholder(t *testing.T) {
 		t.Errorf(`Stash["foo"] != %s`, expectValue)
 	}
 
-	handlerCalled = false
-	req = mojo.NewRequest("GET", "/foo")
-	res = &mojo.Response{}
-	c = app.BuildContext(req, res)
-	app.Routes.Dispatch(c)
+	t.Run("Trailing slash is optional", func(t *testing.T) {
+		handlerCalled = false
+		c := mojotest.NewContext(t, mojo.NewRequest("GET", "/foo"))
+		router.Dispatch(c)
 
-	if !handlerCalled {
-		t.Errorf("Slash before optional placeholder is not optional")
-	}
+		if !handlerCalled {
+			t.Errorf("Slash before optional placeholder is not optional")
+		}
+	})
 }

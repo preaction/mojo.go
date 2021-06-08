@@ -26,6 +26,31 @@ func NewTester(t *testing.T, app *mojo.Application) *Tester {
 	return &Tester{T: t, App: app}
 }
 
+// NewContext returns a new context with sensible defaults for testing.
+// Any opts provided will override the defaults for testing.
+func NewContext(t *testing.T, opts ...interface{}) *mojo.Context {
+	c := mojo.Context{
+		Req:   mojo.NewRequest("GET", "/"),
+		Res:   &mojo.Response{Writer: httptest.NewRecorder()},
+		Stash: map[string]interface{}{},
+	}
+	for _, opt := range opts {
+		switch v := opt.(type) {
+		case *mojo.Request:
+			c.Req = v
+		case *mojo.Response:
+			c.Res = v
+		default:
+			t.Fatalf("Unknown option type %T\n", v)
+		}
+	}
+
+	// Set default stash from request
+	c.Stash["path"] = c.Req.URL.Path
+
+	return &c
+}
+
 // BuildHTTPRequest builds a new http.Request object from the given raw HTTP
 // request
 func BuildHTTPRequest(t *testing.T, raw string) *http.Request {
