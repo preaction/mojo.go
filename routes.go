@@ -22,7 +22,7 @@ type Route struct {
 	Name     string
 	Methods  util.StringSlice
 	Pattern  *regexp.Regexp
-	Defaults map[string]interface{}
+	Defaults Stash
 	Handler  Handler
 }
 
@@ -51,7 +51,7 @@ func init() {
 // If placeholders are not powerful enough, the path can contain named
 // capture groups as a regular expression, like "(?P<name>\d+)" to match
 // only digits.
-func (rs *Routes) Any(methods []string, path string) *Route {
+func (rs *Routes) Any(methods []string, path string, opts ...interface{}) *Route {
 	// Standard placeholders
 	// XXX: Add relaxed and wildcard placeholders
 	// XXX: Add restricted placeholders
@@ -74,24 +74,33 @@ func (rs *Routes) Any(methods []string, path string) *Route {
 	}
 
 	r := &Route{Methods: methods, Pattern: regexp.MustCompile(pathPattern)}
+	for _, opt := range opts {
+		switch v := opt.(type) {
+		case Stash:
+			r.Defaults = v
+		default:
+			panic(fmt.Sprintf("Invalid argument %T", v))
+		}
+	}
+
 	rs.routes = append(rs.routes, r)
 	return r
 }
 
-func (rs *Routes) Get(pattern string) *Route {
-	return rs.Any([]string{"GET"}, pattern)
+func (rs *Routes) Get(pattern string, opts ...interface{}) *Route {
+	return rs.Any([]string{"GET"}, pattern, opts...)
 }
-func (rs *Routes) Post(pattern string) *Route {
-	return rs.Any([]string{"POST"}, pattern)
+func (rs *Routes) Post(pattern string, opts ...interface{}) *Route {
+	return rs.Any([]string{"POST"}, pattern, opts...)
 }
-func (rs *Routes) Put(pattern string) *Route {
-	return rs.Any([]string{"PUT"}, pattern)
+func (rs *Routes) Put(pattern string, opts ...interface{}) *Route {
+	return rs.Any([]string{"PUT"}, pattern, opts...)
 }
-func (rs *Routes) Patch(pattern string) *Route {
-	return rs.Any([]string{"PATCH"}, pattern)
+func (rs *Routes) Patch(pattern string, opts ...interface{}) *Route {
+	return rs.Any([]string{"PATCH"}, pattern, opts...)
 }
-func (rs *Routes) Delete(pattern string) *Route {
-	return rs.Any([]string{"DELETE"}, pattern)
+func (rs *Routes) Delete(pattern string, opts ...interface{}) *Route {
+	return rs.Any([]string{"DELETE"}, pattern, opts...)
 }
 
 func (rs *Routes) Match(c *Context) {
@@ -112,7 +121,8 @@ func (rs *Routes) Match(c *Context) {
 		if regexpMatch == nil {
 			continue
 		}
-		// XXX: Add Route defaults to stash
+		// Add Route defaults to stash
+		c.Stash.Merge(r.Defaults)
 		// Add placeholder values to stash
 		stashNames := r.Pattern.SubexpNames()
 		for i, value := range regexpMatch {
@@ -155,12 +165,6 @@ func (rs *Routes) Dispatch(c *Context) {
 func (r *Route) To(handler Handler) *Route {
 	r.Handler = handler
 	return r
-}
-
-func (r *Route) Stash(defaults map[string]interface{}) {
-	for key, val := range defaults {
-		r.Defaults[key] = val
-	}
 }
 
 func (m *Match) Append(r *Route) {

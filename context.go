@@ -1,10 +1,21 @@
 package mojo
 
+// Stash is a place to store arbitrary data during a request.
+type Stash map[string]interface{}
+
+// Merge adds the keys from the given stash into the current stash. This
+// is a shallow merge (for now).
+func (s *Stash) Merge(src Stash) {
+	for k, v := range src {
+		(*s)[k] = v
+	}
+}
+
 // Context is the central object for request handling
 type Context struct {
 	Req   *Request
 	Res   *Response
-	Stash map[string]interface{}
+	Stash Stash
 	Match *Match
 }
 
