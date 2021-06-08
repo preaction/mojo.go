@@ -80,9 +80,13 @@ func (rs *Routes) Any(methods []string, path string, opts ...interface{}) *Route
 		lastIndex = v[1]
 
 		start := path[v[2]:v[3]]
+		if start != "/" {
+			start = ""
+		}
+
 		//placeType := path[v[4]:v[5]]
 		placeName := path[v[6]:v[7]]
-		end := path[v[8]:v[9]]
+		//end := path[v[8]:v[9]] // unused
 
 		matchType := "+" // required
 		if _, ok := stash[placeName]; ok {
@@ -92,7 +96,7 @@ func (rs *Routes) Any(methods []string, path string, opts ...interface{}) *Route
 			}
 		}
 
-		pathPattern += gap + fmt.Sprintf("%s(?P<%s>[^/.]%s)%s", start, placeName, matchType, end)
+		pathPattern += gap + fmt.Sprintf("%s(?P<%s>[^/.]%s)", start, placeName, matchType)
 	}
 
 	r := &Route{

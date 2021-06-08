@@ -80,7 +80,7 @@ func TestRoutesStash(t *testing.T) {
 	}
 }
 
-func TestRoutesPlaceholder(t *testing.T) {
+func TestRoutesStandardPlaceholder(t *testing.T) {
 	name := ""
 	handlerCalled := false
 	handler := func(c *mojo.Context) {
@@ -101,6 +101,31 @@ func TestRoutesPlaceholder(t *testing.T) {
 		t.Errorf("Route handler not called by Dispatch()")
 	}
 	if name != "morbo" {
+		t.Errorf("Route placeholder not added to stash")
+	}
+}
+
+func TestRoutesDelimitedPlaceholder(t *testing.T) {
+	name := ""
+	handlerCalled := false
+	handler := func(c *mojo.Context) {
+		name = c.Stash["name"].(string)
+		handlerCalled = true
+	}
+
+	app := mojo.NewApplication()
+	app.Routes.Get("/hello_<:name>").To(handler)
+
+	req := mojo.NewRequest("GET", "/hello_world")
+	res := &mojo.Response{Writer: httptest.NewRecorder()}
+	c := app.BuildContext(req, res)
+
+	app.Routes.Dispatch(c)
+
+	if !handlerCalled {
+		t.Errorf("Route handler not called by Dispatch()")
+	}
+	if name != "world" {
 		t.Errorf("Route placeholder not added to stash")
 	}
 }
