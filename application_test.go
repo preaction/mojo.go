@@ -33,15 +33,24 @@ func TestApplicationHookBeforeDispatch(t *testing.T) {
 
 func ExampleApplicationHelloWorld() {
 	app := mojo.NewApplication()
-	app.Routes.Get("/").To(func(c *mojo.Context) { c.Res.Body = "Hello, World!" })
+	r := app.Routes.Get("/:name", mojo.Stash{"name": "World"})
+	r.To(func(c *mojo.Context) {
+		c.Res.Body = fmt.Sprintf("Hello, %s!\n", c.Stash["name"])
+	})
 
 	req := mojo.NewRequest("GET", "/")
 	res := &mojo.Response{}
 	c := app.BuildContext(req, res)
 	app.Handler(c)
+	fmt.Print(c.Res.Body)
 
+	req = mojo.NewRequest("GET", "/Gophers")
+	res = &mojo.Response{}
+	c = app.BuildContext(req, res)
+	app.Handler(c)
 	fmt.Print(c.Res.Body)
 
 	// Output:
 	// Hello, World!
+	// Hello, Gophers!
 }
