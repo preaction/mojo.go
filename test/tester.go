@@ -1,8 +1,11 @@
 package test
 
 import (
+	"bufio"
 	"fmt"
+	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/preaction/mojo.go"
@@ -18,6 +21,22 @@ type Tester struct {
 	Context *mojo.Context
 }
 
+// NewTester creates a new tester for the given application
+func NewTester(t *testing.T, app *mojo.Application) *Tester {
+	return &Tester{T: t, App: app}
+}
+
+// BuildHTTPRequest builds a new http.Request object from the given raw HTTP
+// request
+func BuildHTTPRequest(t *testing.T, raw string) *http.Request {
+	t.Helper()
+	req, err := http.ReadRequest(bufio.NewReader(strings.NewReader(raw)))
+	if err != nil {
+		t.Fatalf("Could not read request: %v", err)
+	}
+	return req
+}
+
 // GetOk tries a GET request to the given path. This test passes if the
 // request is completed without panicking.
 func (t *Tester) GetOk(path string, name ...string) *Tester {
@@ -26,12 +45,10 @@ func (t *Tester) GetOk(path string, name ...string) *Tester {
 
 	// XXX: Create a server to integration test (and in case we want to
 	// turn Application and Server into interfaces in the future)
-	c := mojo.Context{
-		Req: mojo.NewRequest("GET", path),
-		Res: &mojo.Response{Writer: httptest.NewRecorder()},
-	}
-	t.App.BuildContext(&c)
-	t.Context = &c
+	req := mojo.NewRequest("GET", path)
+	res := &mojo.Response{Writer: httptest.NewRecorder()}
+	c := t.App.BuildContext(req, res)
+	t.Context = c
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -39,7 +56,7 @@ func (t *Tester) GetOk(path string, name ...string) *Tester {
 		}
 	}()
 	t.Success = true
-	t.App.Handler(&c)
+	t.App.Handler(c)
 	return t
 }
 

@@ -9,15 +9,15 @@ import (
 )
 
 func TestApplication(t *testing.T) {
-	app := mojo.Application{}
+	app := mojo.NewApplication()
 	app.Routes.Get("/").To(func(c *mojo.Context) { c.Res.Body = "Hello, World!" })
 
-	mt := mojotest.Tester{T: t, App: &app}
+	mt := mojotest.NewTester(t, app)
 	mt.GetOk("/", "Can get root").StatusIs(200)
 }
 
 func TestApplicationHookBeforeDispatch(t *testing.T) {
-	app := mojo.Application{}
+	app := mojo.NewApplication()
 	app.Hook(mojo.BeforeDispatch, func(c *mojo.Context) { c.Stash["who"] = "Mojolicious" })
 	app.Hook(mojo.AfterDispatch, func(c *mojo.Context) {
 		c.Res.Body = fmt.Sprintf("%s\n... and Goodbye!", c.Res.Body)
@@ -26,23 +26,21 @@ func TestApplicationHookBeforeDispatch(t *testing.T) {
 		c.Res.Body = fmt.Sprintf("Hello, %s!", c.Stash["who"])
 	})
 
-	mt := mojotest.Tester{T: t, App: &app}
+	mt := mojotest.NewTester(t, app)
 	mt.GetOk("/", "Can get root").StatusIs(200)
 	mt.TextIs("Hello, Mojolicious!\n... and Goodbye!")
 }
 
 func ExampleApplicationHelloWorld() {
-	app := mojo.Application{}
-	app.Routes.Get("/").To(func(*mojo.Context) { fmt.Print("Hello, World!") })
+	app := mojo.NewApplication()
+	app.Routes.Get("/").To(func(c *mojo.Context) { c.Res.Body = "Hello, World!" })
 
-	c := mojo.Context{
-		Req: mojo.NewRequest("GET", "/"),
-		Stash: map[string]interface{}{
-			"path": "/",
-		},
-	}
+	req := mojo.NewRequest("GET", "/")
+	res := &mojo.Response{}
+	c := app.BuildContext(req, res)
+	app.Handler(c)
 
-	app.Routes.Dispatch(&c)
+	fmt.Print(c.Res.Body)
 
 	// Output:
 	// Hello, World!

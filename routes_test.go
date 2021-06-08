@@ -1,31 +1,22 @@
 package mojo_test
 
 import (
-	"net/url"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/preaction/mojo.go"
 )
 
 func TestRoutesMatch(t *testing.T) {
-	r := mojo.Routes{}
+	app := mojo.NewApplication()
+	r := app.Routes
 	r.Get("/foo")
 
-	// XXX: Create mojo.URL wrapper
-	// Everything needs a damned wrapper to be even remotely usable...
-	url, err := url.ParseRequestURI("/foo")
-	if err != nil {
-		t.Fatalf("Error parsing URL: %v", err)
-	}
+	req := mojo.NewRequest("GET", "/foo")
+	res := &mojo.Response{}
+	c := app.BuildContext(req, res)
 
-	c := mojo.Context{
-		Req: &mojo.Request{Method: "GET", URL: url},
-		Stash: map[string]interface{}{
-			"path": url.Path,
-		},
-	}
-
-	r.Dispatch(&c)
+	r.Dispatch(c)
 
 	if c.Match == nil {
 		t.Errorf("No route found for request: %v", c.Req)
@@ -38,18 +29,14 @@ func TestRoutesHandler(t *testing.T) {
 		handlerCalled = true
 	}
 
-	r := mojo.Routes{}
-	r.Get("/foo").To(handler)
+	app := mojo.NewApplication()
+	app.Routes.Get("/foo").To(handler)
 
-	// XXX: Create helper to build controller from transaction
-	c := mojo.Context{
-		Req: mojo.NewRequest("GET", "/foo"),
-		Stash: map[string]interface{}{
-			"path": "/foo",
-		},
-	}
+	req := mojo.NewRequest("GET", "/foo")
+	res := &mojo.Response{}
+	c := app.BuildContext(req, res)
 
-	r.Dispatch(&c)
+	app.Routes.Dispatch(c)
 
 	if !handlerCalled {
 		t.Errorf("Route handler not called by Dispatch()")
@@ -64,18 +51,14 @@ func TestRoutesPlaceholder(t *testing.T) {
 		handlerCalled = true
 	}
 
-	r := mojo.Routes{}
-	r.Get("/foo/:name").To(handler)
+	app := mojo.NewApplication()
+	app.Routes.Get("/foo/:name").To(handler)
 
-	// XXX: Create helper to build controller from transaction
-	c := mojo.Context{
-		Req: mojo.NewRequest("GET", "/foo/morbo"),
-		Stash: map[string]interface{}{
-			"path": "/foo/morbo",
-		},
-	}
+	req := mojo.NewRequest("GET", "/foo/morbo")
+	res := &mojo.Response{Writer: httptest.NewRecorder()}
+	c := app.BuildContext(req, res)
 
-	r.Dispatch(&c)
+	app.Routes.Dispatch(c)
 
 	if !handlerCalled {
 		t.Errorf("Route handler not called by Dispatch()")

@@ -1,25 +1,18 @@
 package mojo_test
 
 import (
-	"bufio"
-	"net/http"
-	"net/url"
-	"strings"
 	"testing"
 
 	"github.com/preaction/mojo.go"
+	// XXX: Move test -> mojotest
+	mojotest "github.com/preaction/mojo.go/test"
 )
 
 func TestRequestRead(t *testing.T) {
-	url, err := url.ParseRequestURI("/foo")
-	if err != nil {
-		t.Fatalf("Error parsing URL: %v", err)
-	}
-
-	raw := http.Request{Method: "GET", URL: url}
+	raw := mojotest.BuildHTTPRequest(t, "GET /foo HTTP/1.1\n\n")
 
 	req := &mojo.Request{}
-	req.Read(&raw)
+	req.Read(raw)
 
 	if req.Method != "GET" {
 		t.Errorf("Method not read correctly. Expected: %s, Got: %s", "GET", req.Method)
@@ -27,18 +20,14 @@ func TestRequestRead(t *testing.T) {
 }
 
 func TestRequestFormParams(t *testing.T) {
-	raw := `POST /foo?bar=baz&fizz=no HTTP/1.1
+	raw := mojotest.BuildHTTPRequest(t, `POST /foo?bar=baz&fizz=no HTTP/1.1
 Content-Type: application/x-www-form-urlencoded
 Content-Length: 9
 
-fizz=buzz`
-	rawReq, err := http.ReadRequest(bufio.NewReader(strings.NewReader(raw)))
-	if err != nil {
-		t.Fatalf("Could not read request: %v", err)
-	}
+fizz=buzz`)
 
 	req := &mojo.Request{}
-	req.Read(rawReq)
+	req.Read(raw)
 
 	if req.BodyParams.Param("fizz") != "buzz" {
 		t.Errorf("POST body parameter not correct")

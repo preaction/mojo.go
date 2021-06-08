@@ -47,16 +47,11 @@ func NewApplication() *Application {
 
 // XXX: Use go embed to embed templates and static files
 
-// BuildContext fills in the context from its Request object, including
-// setting the default stash values from the Application and any stash
-// values that come from the Request
-func (app *Application) BuildContext(c *Context) *Context {
-	if c.Stash == nil {
-		c.Stash = map[string]interface{}{}
-	}
-	if c.Res == nil {
-		c.Res = &Response{}
-	}
+// BuildContext fills in the context from the given Request and Response
+// objects, including setting the default stash values from the
+// Application and any stash values that come from the Request
+func (app *Application) BuildContext(req *Request, res *Response) *Context {
+	c := &Context{Req: req, Res: res, Stash: map[string]interface{}{}}
 
 	// XXX: Add defaults from application
 	// Set default stash values from request
@@ -103,11 +98,12 @@ func (app *Application) Handler(c *Context) {
 	if c.Res.Code == 0 {
 		c.Res.Code = 200
 	}
-	// XXX: Copy response headers
-	// XXX: Embed writer?
-	c.Res.Writer.WriteHeader(c.Res.Code)
-	// XXX: Build Body from whatever parts we have
-	c.Res.Writer.Write([]byte(c.Res.Body))
+	if c.Res.Writer != nil {
+		// XXX: Copy response headers
+		c.Res.Writer.WriteHeader(c.Res.Code)
+		// XXX: Build Body from whatever parts we have
+		c.Res.Writer.Write([]byte(c.Res.Body))
+	}
 }
 
 // Start invokes the Application's commands using the arguments given on

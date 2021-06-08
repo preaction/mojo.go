@@ -15,25 +15,11 @@ func (srv *Server) Serve(l net.Listener) error {
 	return srv.raw.Serve(l)
 }
 
-func (srv *Server) BuildRequest(r *http.Request) *Request {
+func (srv *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	req := &Request{}
 	req.Read(r)
-	return req
-}
-
-func (srv *Server) BuildResponse(w http.ResponseWriter) *Response {
-	return &Response{Writer: w}
-}
-
-func (srv *Server) BuildContext(w http.ResponseWriter, r *http.Request) *Context {
-	c := &Context{
-		Req: srv.BuildRequest(r),
-		Res: srv.BuildResponse(w),
-	}
-	return srv.App.BuildContext(c)
-}
-
-func (srv *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	res := &Response{Writer: w}
+	c := srv.App.BuildContext(req, res)
 	// XXX: Capture panics?
-	srv.App.Handler(srv.BuildContext(w, r))
+	srv.App.Handler(c)
 }
