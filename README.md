@@ -10,13 +10,14 @@ application using its Start() method.
 ```go
 package main
 import "github.com/preaction/mojo.go"
+import "fmt"
 func main() {
 	app := mojo.NewApplication()
-	app.Routes.Get( "/" ).To( RootHandler )
+	app.Routes.Get( "/:name", mojo.Stash{"name": "World"}).To( GreetHandler )
 	app.Start()
 }
-func RootHandler( c *mojo.Context ) {
-	c.Res.Body = "Hello, World!"
+func GreetHandler( c *mojo.Context ) {
+	c.Res.Body = fmt.Sprintf( "Hello, %!(NOVERB)s!", c.Stash["name"] )
 }
 ```
 
