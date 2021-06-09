@@ -13,6 +13,7 @@ type Application struct {
 	Routes   Routes
 	hooks    map[Hook][]HookHandler
 	Commands map[string]Command
+	Renderer Renderer
 }
 
 // Hook is label for an application event that can have HookHandlers
@@ -38,6 +39,7 @@ const (
 func NewApplication() *Application {
 	app := &Application{
 		Commands: map[string]Command{},
+		Renderer: &GoRenderer{},
 	}
 	app.Commands["help"] = &HelpCommand{App: app}
 	app.Commands["version"] = &VersionCommand{App: app}
@@ -51,7 +53,7 @@ func NewApplication() *Application {
 // objects, including setting the default stash values from the
 // Application and any stash values that come from the Request
 func (app *Application) BuildContext(req *Request, res *Response) *Context {
-	c := &Context{Req: req, Res: res, Stash: map[string]interface{}{}}
+	c := &Context{Req: req, Res: res, App: app, Stash: map[string]interface{}{}}
 
 	// XXX: Add defaults from application
 	// Set default stash values from request

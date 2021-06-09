@@ -21,3 +21,18 @@ func TestContextParam(t *testing.T) {
 		t.Errorf("Param not overridden by stash")
 	}
 }
+
+func TestContextRenderString(t *testing.T) {
+	app := mojo.NewApplication()
+	app.Renderer.(*mojo.GoRenderer).Add("foo", "bar")
+
+	req := mojo.NewRequest("GET", "/")
+	// XXX: Add Params argument to mojo.NewRequest
+	req.Params = map[string][]string{"foo": []string{"bar"}}
+
+	c := app.BuildContext(req, &mojo.Response{})
+	out := c.RenderString("foo")
+	if out != "bar" {
+		t.Errorf(`RenderString("foo") != "bar"; Got: %s`, out)
+	}
+}

@@ -17,6 +17,7 @@ type Context struct {
 	Res   *Response
 	Stash Stash
 	Match *Match
+	App   *Application
 }
 
 // Param returns the given parameter. Stash values take precedence over
@@ -28,4 +29,26 @@ func (c *Context) Param(name string) string {
 		return value.(string)
 	}
 	return c.Req.Param(name)
+}
+
+// Render finalizes and writes the response to the client. The given
+// Stash will be merged with the stash inside the context to produce the
+// response.
+func (c *Context) Render(templateName string, stash ...Stash) {
+	str := c.RenderString(templateName, stash...)
+	// Reserved stashes:
+	// status -> c.Res.Code
+	if code, ok := c.Stash["status"]; ok {
+		c.Res.Code = code.(int)
+	}
+	c.Res.Body = str
+}
+
+// RenderString returns the rendered output as a string. It does not
+// write anything to the response.
+func (c *Context) RenderString(templateName string, stash ...Stash) string {
+	for _, s := range stash {
+		c.Stash.Merge(s)
+	}
+	return c.App.Renderer.Render(templateName, c)
 }
