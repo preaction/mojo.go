@@ -7,7 +7,7 @@ import (
 
 func TestGoRendererRender(t *testing.T) {
 	r := mojo.GoRenderer{}
-	r.Add("foo", "bar")
+	r.AddTemplate("foo", "bar")
 	out := r.Render("foo", &mojo.Context{})
 	if out != "bar" {
 		t.Errorf(`Render("foo") != "bar"`)

@@ -9,7 +9,8 @@ import (
 // Renderer is an interface for template renderers. Implement this
 // interface to integrate with another template system.
 type Renderer interface {
-	Render(what string, c *Context) string
+	AddTemplate(name string, content string)
+	Render(name string, c *Context) string
 }
 
 // GoRenderer implements the Renderer interface using Go's built-in HTML
@@ -30,7 +31,7 @@ func (ren *GoRenderer) template(name string) *template.Template {
 }
 
 // Add adds a template to the cache.
-func (ren *GoRenderer) Add(name string, content string) {
+func (ren *GoRenderer) AddTemplate(name string, content string) {
 	// XXX: Do we keep this or do something else to inject templates?
 	if ren.templates == nil {
 		ren.templates = map[string]*template.Template{}

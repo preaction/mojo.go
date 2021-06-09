@@ -24,7 +24,7 @@ func TestContextParam(t *testing.T) {
 
 func TestContextRenderString(t *testing.T) {
 	app := mojo.NewApplication()
-	app.Renderer.(*mojo.GoRenderer).Add("foo", "bar")
+	app.Renderer.AddTemplate("foo", "bar")
 
 	req := mojo.NewRequest("GET", "/")
 	// XXX: Add Params argument to mojo.NewRequest

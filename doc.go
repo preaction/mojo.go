@@ -10,11 +10,12 @@
 //		import "fmt"
 //		func main() {
 //			app := mojo.NewApplication()
+//			app.Renderer.AddTemplate("greet", "Hello, <% .Stash.name %>!\n")
 //			app.Routes.Get( "/:name", mojo.Stash{"name": "World"}).To( GreetHandler )
 //			app.Start()
 //		}
 //		func GreetHandler( c *mojo.Context ) {
-//			c.Res.Body = fmt.Sprintf( "Hello, %s!", c.Stash["name"] )
+//			c.Render( "greet" )
 //		}
 //
 package mojo

@@ -33,9 +33,11 @@ func TestApplicationHookBeforeDispatch(t *testing.T) {
 
 func ExampleApplicationHelloWorld() {
 	app := mojo.NewApplication()
+	app.Renderer.AddTemplate("greet", "Hello, <% .Stash.name %>!\n")
+
 	r := app.Routes.Get("/:name", mojo.Stash{"name": "World"})
 	r.To(func(c *mojo.Context) {
-		c.Res.Body = fmt.Sprintf("Hello, %s!\n", c.Stash["name"])
+		c.Render("greet")
 	})
 
 	req := mojo.NewRequest("GET", "/")
