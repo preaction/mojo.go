@@ -97,6 +97,9 @@ func (app *Application) Handler(c *Context) {
 	app.emit(AfterDispatch, c)
 
 	// Write the response
+	if !c.rendered {
+		c.Render("")
+	}
 	if c.Res.Code == 0 {
 		c.Res.Code = 200
 	}

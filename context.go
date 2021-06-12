@@ -13,11 +13,12 @@ func (s *Stash) Merge(src Stash) {
 
 // Context is the central object for request handling
 type Context struct {
-	Req   *Request
-	Res   *Response
-	Stash Stash
-	Match *Match
-	App   *Application
+	Req      *Request
+	Res      *Response
+	Stash    Stash
+	Match    *Match
+	App      *Application
+	rendered bool
 }
 
 // Param returns the given parameter. Stash values take precedence over
@@ -35,13 +36,16 @@ func (c *Context) Param(name string) string {
 // Stash will be merged with the stash inside the context to produce the
 // response.
 func (c *Context) Render(templateName string, stash ...Stash) {
-	str := c.RenderString(templateName, stash...)
+	if templateName != "" {
+		str := c.RenderString(templateName, stash...)
+		c.Res.Body = str
+	}
 	// Reserved stashes:
 	// status -> c.Res.Code
 	if code, ok := c.Stash["status"]; ok {
 		c.Res.Code = code.(int)
 	}
-	c.Res.Body = str
+	c.rendered = true
 }
 
 // RenderString returns the rendered output as a string. It does not

@@ -56,3 +56,61 @@ func ExampleApplicationHelloWorld() {
 	// Hello, World!
 	// Hello, Gophers!
 }
+
+func ExampleApplicationJSON() {
+	type Employee struct {
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	}
+	employees := map[string]Employee{}
+	app := mojo.NewApplication()
+
+	r := app.Routes.Put("/employee/:id")
+	r.To(func(c *mojo.Context) {
+		id := c.Param("id")
+		update := Employee{}
+		if err := c.Req.JSON(&update); err != nil {
+			c.Stash["status"] = 400
+			c.Stash["content"] = err
+			return
+		}
+		employees[id] = update
+		c.Stash["status"] = 204
+	})
+
+	r = app.Routes.Get("/employee/:id")
+	r.To(func(c *mojo.Context) {
+		id := c.Param("id")
+		if _, ok := employees[id]; !ok {
+			c.Stash["status"] = 404
+			return
+		}
+		c.Res.JSON(employees[id])
+	})
+
+	req := mojo.NewRequest("PUT", "/employee/fry")
+	req.Body = `{"name":"Philip J. Fry","email":"orangejoe@planex.com"}`
+	res := mojo.NewResponse()
+	c := app.BuildContext(req, res)
+	app.Handler(c)
+	fmt.Printf("%+v\n", employees)
+
+	req = mojo.NewRequest("GET", "/employee/fry")
+	res = mojo.NewResponse()
+	c = app.BuildContext(req, res)
+	app.Handler(c)
+	fmt.Printf("%s\n", c.Res.Body)
+	fmt.Printf("%s\n", c.Res.Headers.Header("Content-Type"))
+
+	req = mojo.NewRequest("GET", "/employee/bender")
+	res = mojo.NewResponse()
+	c = app.BuildContext(req, res)
+	app.Handler(c)
+	fmt.Printf("%d\n", c.Res.Code)
+
+	// Output:
+	// map[fry:{Name:Philip J. Fry Email:orangejoe@planex.com}]
+	// {"name":"Philip J. Fry","email":"orangejoe@planex.com"}
+	// application/json
+	// 404
+}
