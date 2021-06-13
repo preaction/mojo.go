@@ -170,7 +170,7 @@ func (rs *Routes) Dispatch(c *Context) {
 		// XXX: Replace with Log
 		//fmt.Printf("[debug] 404 Not Found\n")
 		c.Res.Code = 404
-		c.Res.Message = "Not Found"
+		c.Res.Status = "Not Found"
 		return
 	}
 	// Call handler in matched Route objects

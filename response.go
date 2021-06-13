@@ -7,16 +7,15 @@ import (
 
 // Response represents a response to the client.
 type Response struct {
-	Writer  http.ResponseWriter
-	Code    int
-	Message string
-	Body    string
-	Headers Headers
+	Message
+	Writer http.ResponseWriter
+	Code   int
+	Status string
 }
 
 // NewResponse returns a new, empty response with sensible defaults.
 func NewResponse() *Response {
-	return &Response{Headers: Headers{}}
+	return &Response{Message: Message{Headers: Headers{}}}
 }
 
 // JSON encodes the given argument as JSON and updates the response's
@@ -26,6 +25,6 @@ func (res *Response) JSON(data interface{}) {
 	if err != nil {
 		panic(err)
 	}
-	res.Body = string(json)
+	res.Content = string(json)
 	res.Headers["Content-Type"] = []string{"application/json"}
 }

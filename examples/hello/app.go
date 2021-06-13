@@ -17,5 +17,5 @@ func Greeting(c *mojo.Context) {
 	if who == "" {
 		who = "World"
 	}
-	c.Res.Body = fmt.Sprintf("Hello, %s!", who)
+	c.Res.Content = fmt.Sprintf("Hello, %s!", who)
 }

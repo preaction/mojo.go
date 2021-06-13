@@ -107,7 +107,7 @@ func (app *Application) Handler(c *Context) {
 		// XXX: Copy response headers
 		c.Res.Writer.WriteHeader(c.Res.Code)
 		// XXX: Build Body from whatever parts we have
-		c.Res.Writer.Write([]byte(c.Res.Body))
+		c.Res.Writer.Write([]byte(c.Res.Content))
 	}
 }
 

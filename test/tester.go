@@ -117,8 +117,8 @@ func (t *Tester) TextIs(text string, name ...string) *Tester {
 		return t
 	}
 
-	if t.Context.Res.Body != text {
-		t.errorf(name, "Text is not equal:\n\tExpect: %s\n\tGot: %s", text, t.Context.Res.Body)
+	if t.Context.Res.Content != text {
+		t.errorf(name, "Text is not equal:\n\tExpect: %s\n\tGot: %s", text, t.Context.Res.Content)
 		return t
 	}
 	t.Success = true

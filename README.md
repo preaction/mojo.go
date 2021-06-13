@@ -17,7 +17,7 @@ func main() {
 	app.Start()
 }
 func GreetHandler( c *mojo.Context ) {
-	c.Res.Body = fmt.Sprintf( "Hello, %!(NOVERB)s!", c.Stash["name"] )
+	c.Res.Content = fmt.Sprintf( "Hello, %!(NOVERB)s!", c.Stash["name"] )
 }
 ```
 

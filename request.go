@@ -10,12 +10,12 @@ import (
 
 // Request represents an HTTP request
 type Request struct {
+	Message
 	Method      string
 	URL         *url.URL
 	Params      Parameters
 	QueryParams Parameters
 	BodyParams  Parameters
-	Body        string
 
 	raw *http.Request
 }
@@ -67,22 +67,22 @@ func (req *Request) EveryParam(name string) []string {
 
 // readBody reads the request body if necessary, caches it in the
 // Request object, and returns it.
-func (req *Request) readBody() string {
-	if req.Body != "" {
-		return req.Body
+func (req *Request) readContent() string {
+	if req.Content != "" {
+		return req.Content
 	}
 	body, err := io.ReadAll(req.raw.Body)
 	if err != nil {
 		panic(err)
 	}
-	req.Body = string(body)
-	return req.Body
+	req.Content = string(body)
+	return req.Content
 }
 
 // JSON reads the request body and unmarshals into the given type
 // pointer. Returns an error if JSON parsing fails.
 func (req *Request) JSON(empty interface{}) error {
-	body := req.readBody()
-	err := json.Unmarshal([]byte(body), empty)
+	content := req.readContent()
+	err := json.Unmarshal([]byte(content), empty)
 	return err
 }

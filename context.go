@@ -37,8 +37,8 @@ func (c *Context) Param(name string) string {
 // response.
 func (c *Context) Render(templateName string, stash ...Stash) {
 	if templateName != "" {
-		str := c.RenderString(templateName, stash...)
-		c.Res.Body = str
+		str := c.RenderToString(templateName, stash...)
+		c.Res.Content = str
 	}
 	// Reserved stashes:
 	// status -> c.Res.Code
@@ -48,9 +48,9 @@ func (c *Context) Render(templateName string, stash ...Stash) {
 	c.rendered = true
 }
 
-// RenderString returns the rendered output as a string. It does not
+// RenderToString returns the rendered output as a string. It does not
 // write anything to the response.
-func (c *Context) RenderString(templateName string, stash ...Stash) string {
+func (c *Context) RenderToString(templateName string, stash ...Stash) string {
 	for _, s := range stash {
 		c.Stash.Merge(s)
 	}

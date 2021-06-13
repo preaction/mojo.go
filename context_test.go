@@ -22,7 +22,7 @@ func TestContextParam(t *testing.T) {
 	}
 }
 
-func TestContextRenderString(t *testing.T) {
+func TestContextRenderToString(t *testing.T) {
 	app := mojo.NewApplication()
 	app.Renderer.AddTemplate("foo", "bar")
 
@@ -31,8 +31,8 @@ func TestContextRenderString(t *testing.T) {
 	req.Params = map[string][]string{"foo": []string{"bar"}}
 
 	c := app.BuildContext(req, &mojo.Response{})
-	out := c.RenderString("foo")
+	out := c.RenderToString("foo")
 	if out != "bar" {
-		t.Errorf(`RenderString("foo") != "bar"; Got: %s`, out)
+		t.Errorf(`RenderToString("foo") != "bar"; Got: %s`, out)
 	}
 }
