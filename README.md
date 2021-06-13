@@ -13,11 +13,12 @@ import "github.com/preaction/mojo.go"
 import "fmt"
 func main() {
 	app := mojo.NewApplication()
+	app.Renderer.AddTemplate("greet", "Hello, <%!.(MISSING)Stash.name %!>(MISSING)!\n")
 	app.Routes.Get( "/:name", mojo.Stash{"name": "World"}).To( GreetHandler )
 	app.Start()
 }
 func GreetHandler( c *mojo.Context ) {
-	c.Res.Content = fmt.Sprintf( "Hello, %!(NOVERB)s!", c.Stash["name"] )
+	c.Render( "greet" )
 }
 ```
 
