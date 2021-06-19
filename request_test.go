@@ -45,3 +45,30 @@ fizz=buzz`)
 		t.Errorf("POST body parameter does not take precedence")
 	}
 }
+
+func TestRequestJSON(t *testing.T) {
+	raw := mojotest.BuildHTTPRequest(t, `POST /foo?bar=baz&fizz=no HTTP/1.1
+Content-Type: application/json
+Content-Length: 39
+
+{"foo":"foo","baz":"baz","fizz":"fizz"}`)
+
+	req := &mojo.Request{}
+	req.Read(raw)
+
+	type TestJSON struct {
+		Foo  string `json:"foo"`
+		Baz  string `json:"baz"`
+		Fizz string `json:"fizz"`
+	}
+
+	body := TestJSON{}
+	err := req.JSON(&body)
+	if err != nil {
+		t.Errorf("Error parsing JSON: %v", err)
+	}
+	if body.Foo != "foo" || body.Baz != "baz" || body.Fizz != "fizz" {
+		t.Errorf("JSON parse incorrect: %v", body)
+	}
+
+}
