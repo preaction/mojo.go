@@ -11,6 +11,7 @@ import (
 // handlers.
 type Application struct {
 	Routes   Routes
+	Log      Log
 	hooks    map[Hook][]HookHandler
 	Commands map[string]Command
 	Renderer Renderer
@@ -40,6 +41,7 @@ func NewApplication() *Application {
 	app := &Application{
 		Commands: map[string]Command{},
 		Renderer: &GoRenderer{},
+		Log:      NewLog(),
 	}
 	app.Commands["help"] = &HelpCommand{App: app}
 	app.Commands["version"] = &VersionCommand{App: app}
