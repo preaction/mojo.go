@@ -66,6 +66,21 @@ func (rs *Routes) Any(methods []string, path string, opts ...interface{}) *Route
 		}
 	}
 
+	pathPattern := parsePattern(path, stash)
+	r := &Route{
+		Methods:  methods,
+		Pattern:  regexp.MustCompile(pathPattern),
+		Defaults: stash,
+	}
+	rs.routes = append(rs.routes, r)
+	return r
+}
+
+// parsePattern parses the given path with placeholders and returns
+// a string suitable for a regexp. This string does not contain
+// start/end anchors, so that different route types can choose different
+// anchors.
+func parsePattern(path string, stash Stash) string {
 	// Standard placeholders
 	// XXX: Add relaxed and wildcard placeholders
 	// XXX: Add restricted placeholders
@@ -98,14 +113,7 @@ func (rs *Routes) Any(methods []string, path string, opts ...interface{}) *Route
 
 		pathPattern += gap + fmt.Sprintf("%s(?P<%s>[^/.]%s)", start, placeName, matchType)
 	}
-
-	r := &Route{
-		Methods:  methods,
-		Pattern:  regexp.MustCompile(pathPattern),
-		Defaults: stash,
-	}
-	rs.routes = append(rs.routes, r)
-	return r
+	return pathPattern
 }
 
 func (rs *Routes) Get(pattern string, opts ...interface{}) *Route {
