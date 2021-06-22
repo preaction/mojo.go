@@ -13,12 +13,13 @@ func (s *Stash) Merge(src Stash) {
 
 // Context is the central object for request handling
 type Context struct {
-	Req      *Request
-	Res      *Response
-	Stash    Stash
-	Match    *Match
-	App      *Application
-	rendered bool
+	Req              *Request
+	Res              *Response
+	Stash            Stash
+	Match            *Match
+	App              *Application
+	rendered         bool
+	continueDispatch bool
 }
 
 // Param returns the given parameter. Stash values take precedence over

@@ -19,6 +19,7 @@ type Handler func(*Context)
 
 // Route is a single endpoint
 type Route struct {
+	*Routes
 	Name     string
 	Methods  util.StringSlice
 	Pattern  *regexp.Regexp
@@ -56,16 +57,7 @@ func init() {
 // capture groups as a regular expression, like "(?P<name>\d+)" to match
 // only digits.
 func (rs *Routes) Any(methods []string, path string, opts ...interface{}) *Route {
-	var stash Stash
-	for _, opt := range opts {
-		switch v := opt.(type) {
-		case Stash:
-			stash = v
-		default:
-			panic(fmt.Sprintf("Invalid argument %T", v))
-		}
-	}
-
+	stash := optionalStash(opts)
 	pathPattern := parsePattern(path, stash)
 	r := &Route{
 		Methods:  methods,
@@ -74,6 +66,21 @@ func (rs *Routes) Any(methods []string, path string, opts ...interface{}) *Route
 	}
 	rs.routes = append(rs.routes, r)
 	return r
+}
+
+// optionalStash finds and returns the first Stash object in the given
+// array of options to a function. If no Stash object is found, returns
+// an empty Stash object.
+func optionalStash(opts []interface{}) Stash {
+	// XXX: If we require a stash object, create a requireStash() func
+	// XXX: Remove found stash from opts so we can assert that all
+	// opts have been used
+	for _, opt := range opts {
+		if stash, ok := opt.(Stash); ok {
+			return stash
+		}
+	}
+	return Stash{}
 }
 
 // parsePattern parses the given path with placeholders and returns
@@ -113,6 +120,12 @@ func parsePattern(path string, stash Stash) string {
 
 		pathPattern += gap + fmt.Sprintf("%s(?P<%s>[^/.]%s)", start, placeName, matchType)
 	}
+
+	// If we never matched, there were no placeholders
+	if pathPattern == "" {
+		return path
+	}
+
 	return pathPattern
 }
 
@@ -132,12 +145,29 @@ func (rs *Routes) Delete(pattern string, opts ...interface{}) *Route {
 	return rs.Any([]string{"DELETE"}, pattern, opts...)
 }
 
-func (rs *Routes) Match(c *Context) {
-	method := c.Req.Method
-	path := c.Stash["path"].(string)
-	// XXX: Replace with Log
-	//fmt.Printf("[debug] %s %s\n", method, path)
+// Under creates an intermediate destination. Under routes can have
+// further destinations nested inside them. The handler given to Under
+// must return a boolean to determine whether to continue dispatch.
+func (rs *Routes) Under(pattern string, handler func(*Context) bool, opts ...interface{}) *Route {
+	stash := optionalStash(opts)
+	pathPattern := parsePattern(pattern, stash)
+	r := &Route{
+		Methods:  []string{"GET", "POST", "PATCH", "PUT", "DELETE"},
+		Pattern:  regexp.MustCompile(pathPattern),
+		Defaults: stash,
+		Routes:   &Routes{},
+		Handler: func(c *Context) {
+			c.continueDispatch = handler(c)
+		},
+	}
+	rs.routes = append(rs.routes, r)
+	return r
+}
 
+// findRoute finds a matching route for the given method and path,
+// returning the route and any placeholder values to be put into the
+// stash
+func (rs *Routes) findRoute(method string, path string) (*Route, *Stash) {
 	for _, r := range rs.routes {
 		// Check method
 		if !r.Methods.Has(method) {
@@ -150,28 +180,69 @@ func (rs *Routes) Match(c *Context) {
 		if regexpMatch == nil {
 			continue
 		}
-		// Add Route defaults to stash
-		c.Stash.Merge(r.Defaults)
+
 		// Add placeholder values to stash
+		stash := Stash{}
+		stash.Merge(r.Defaults)
 		stashNames := r.Pattern.SubexpNames()
 		for i, value := range regexpMatch {
 			if i == 0 || value == "" {
 				continue
 			}
-			c.Stash[stashNames[i]] = value
+			stash[stashNames[i]] = value
 		}
-
-		// Matched!
-		if c.Match == nil {
-			c.Match = &Match{}
-		}
-		c.Match.Append(r)
-
-		// XXX: If there are child routes of this route (Under), try to
-		// append to the match stack
+		return r, &stash
 	}
+	return nil, nil
 }
 
+// Match tries to find the route(s) for the given Context. If found, the
+// context's Match value will be set to an array of Route objects to
+// call, in order. See: Dispatch
+func (rs *Routes) Match(c *Context) {
+	method := c.Req.Method
+	path := c.Stash["path"].(string)
+	// XXX: Replace with Log
+	//fmt.Printf("[debug] %s %s\n", method, path)
+
+	r, stash := rs.findRoute(method, path)
+	if r == nil {
+		return
+	}
+
+	// Matched!
+	if c.Match == nil {
+		c.Match = &Match{}
+	}
+	c.Match.Append(r)
+
+	// XXX: If there are child routes of this route (Under), try to
+	// append to the match stack
+	for r.Routes != nil && len(r.Routes.routes) > 0 {
+		// Remove the last match off the front
+		childPath := r.Pattern.ReplaceAllString(path, "")
+		// Try to match again
+		cr, cstash := r.findRoute(method, childPath)
+
+		if cr == nil {
+			// If we had a child to match but didn't, matching fails
+			c.Match = nil
+			return
+		}
+		c.Match.Append(cr)
+		stash.Merge(*cstash)
+
+		// Keep trying
+		r = cr
+		path = childPath
+	}
+
+	// Matching succeeded!
+	c.Stash.Merge(*stash)
+}
+
+// Dispatch takes the given context, finds matching route(s), and calls
+// their handlers.
 func (rs *Routes) Dispatch(c *Context) {
 	rs.Match(c)
 	if c.Match == nil {
@@ -187,6 +258,9 @@ func (rs *Routes) Dispatch(c *Context) {
 		// XXX: Create mojo.Log w/ Error, Warning, Info, Debug, Trace
 		if r.Handler != nil {
 			r.Handler(c)
+		}
+		if !c.continueDispatch {
+			break
 		}
 	}
 }
