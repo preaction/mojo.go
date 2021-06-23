@@ -40,6 +40,8 @@ func NewContext(t *testing.T, opts ...interface{}) *mojo.Context {
 			c.Req = v
 		case *mojo.Response:
 			c.Res = v
+		case mojo.Stash:
+			c.Stash.Merge(v)
 		default:
 			t.Fatalf("Unknown option type %T\n", v)
 		}

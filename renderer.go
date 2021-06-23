@@ -10,6 +10,7 @@ import (
 // interface to integrate with another template system.
 type Renderer interface {
 	AddTemplate(name string, content string)
+	AddHelper(name string, f interface{})
 	Render(name string, c *Context) string
 }
 
@@ -18,37 +19,46 @@ type Renderer interface {
 // %>".
 type GoRenderer struct {
 	Paths     []File
-	templates map[string]*template.Template
+	helpers   map[string]interface{}
+	templates map[string]string
+}
+
+// AddHelper adds a template function with the given name.
+func (ren *GoRenderer) AddHelper(name string, f interface{}) {
+	if ren.helpers == nil {
+		ren.helpers = map[string]interface{}{}
+	}
+	ren.helpers[name] = f
 }
 
 // template initializes a new Template object with the appropriate
-// settings. Since Go requires that all functions be registered before
-// the template is parsed, we must do this as late as possible...
+// settings.
 func (ren *GoRenderer) template(name string) *template.Template {
 	// Initialize a template with the correct settings.
-	// XXX: Add FuncMap
 	return template.New(name).Delims("<%", "%>")
 }
 
-// Add adds a template to the cache.
+// AddTemplate adds a template to the cache.
 func (ren *GoRenderer) AddTemplate(name string, content string) {
 	// XXX: Do we keep this or do something else to inject templates?
 	if ren.templates == nil {
-		ren.templates = map[string]*template.Template{}
+		ren.templates = map[string]string{}
 	}
-	t := ren.template(name)
-	ren.templates[name] = template.Must(t.Parse(content))
+	ren.templates[name] = content
 }
 
 // Render renders the named template using the data in the given
 // context.
 func (ren *GoRenderer) Render(name string, c *Context) string {
-	// Look up template in the cache
-	t, ok := ren.templates[name]
+	// Look up content in the cache
+	content, ok := ren.templates[name]
 	// XXX: If missing, look up template on the filesystem
 	if !ok {
 		panic(fmt.Sprintf("No template %s", name))
 	}
+
+	t := ren.template(name).Funcs(ren.helpers)
+	template.Must(t.Parse(content))
 
 	str := strings.Builder{}
 	t.Execute(&str, c)
