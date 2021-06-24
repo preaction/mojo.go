@@ -1,8 +1,10 @@
 package mojo
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
+	"io/fs"
 	"strings"
 )
 
@@ -11,6 +13,7 @@ import (
 type Renderer interface {
 	AddTemplate(name string, content string)
 	AddHelper(name string, f interface{})
+	AddFS(fs fs.FS)
 	Render(name string, c *Context) string
 }
 
@@ -18,7 +21,7 @@ type Renderer interface {
 // Template system, changing the delimiters from "{{ ... }}" to "<% ...
 // %>".
 type GoRenderer struct {
-	Paths     []File
+	fs        []fs.FS
 	helpers   map[string]interface{}
 	templates map[string]string
 }
@@ -47,14 +50,29 @@ func (ren *GoRenderer) AddTemplate(name string, content string) {
 	ren.templates[name] = content
 }
 
+// AddFS adds a filesystem to look up templates.
+func (ren *GoRenderer) AddFS(f fs.FS) {
+	ren.fs = append([]fs.FS{f}, ren.fs...)
+}
+
 // Render renders the named template using the data in the given
 // context.
 func (ren *GoRenderer) Render(name string, c *Context) string {
 	// Look up content in the cache
 	content, ok := ren.templates[name]
-	// XXX: If missing, look up template on the filesystem
+	// If missing, look up template from the available filesystems
 	if !ok {
-		panic(fmt.Sprintf("No template %s", name))
+		for _, f := range ren.fs {
+			bytes, err := fs.ReadFile(f, name)
+			if err != nil && !errors.Is(err, fs.ErrNotExist) {
+				panic(fmt.Sprintf("Could not read template file: %s", err))
+			} else if err != nil {
+				continue
+			}
+			content = string(bytes)
+			ren.AddTemplate(name, content)
+			break
+		}
 	}
 
 	t := ren.template(name).Funcs(ren.helpers)
