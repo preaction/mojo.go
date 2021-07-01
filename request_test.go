@@ -1,6 +1,7 @@
 package mojo_test
 
 import (
+	"net/url"
 	"testing"
 
 	"github.com/preaction/mojo.go"
@@ -15,7 +16,32 @@ func TestRequestRead(t *testing.T) {
 	req.Read(raw)
 
 	if req.Method != "GET" {
-		t.Errorf("Method not read correctly. Expected: %s, Got: %s", "GET", req.Method)
+		t.Errorf("Method not read correctly. Expected: %#v, Got: %#v", "GET", req.Method)
+	}
+
+	expectURL, _ := url.ParseRequestURI("/foo")
+	if *req.URL != *expectURL {
+		t.Errorf("URL not read correctly. Expected: %#v, Got: %#v", expectURL, req.URL)
+	}
+}
+
+func TestRequestReadHeaders(t *testing.T) {
+	raw := mojotest.BuildHTTPRequest(t, `GET /foo HTTP/1.1
+Content-Length: 0
+Host: example.com
+
+`)
+
+	req := &mojo.Request{}
+	req.Read(raw)
+
+	// Testing direct access to the map tests that case is preserved in
+	// the map
+	if len(req.Headers["Host"]) == 0 || req.Headers["Host"][0] != "example.com" {
+		t.Errorf(`Host header not read correctly. Expected: []string{"example.com"}, Got: %v`, req.Headers["Host"])
+	}
+	if len(req.Headers["Content-Length"]) == 0 || req.Headers["Content-Length"][0] != "0" {
+		t.Errorf(`Content-Length header not read correctly. Expected: []string{"0"}, Got: %v`, req.Headers["Content-Length"])
 	}
 }
 

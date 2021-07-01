@@ -50,6 +50,10 @@ func (req *Request) Read(raw *http.Request) {
 		req.BodyParams[k] = v
 		req.Params[k] = v
 	}
+
+	req.Headers = Headers(raw.Header)
+	// The Host header was removed by Go, so we have to put it back
+	req.Headers["Host"] = []string{raw.Host}
 }
 
 // Param gets the first value for the given parameter. Body parameters (POST
