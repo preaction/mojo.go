@@ -1,5 +1,11 @@
 package mojo
 
+import (
+	"strconv"
+	"strings"
+	"time"
+)
+
 // Headers represents HTTP Headers, which are case-insensitive
 type Headers map[string][]string
 
@@ -39,4 +45,60 @@ func (h Headers) Pairs() [][2]string {
 		}
 	}
 	return pairs
+}
+
+// IfNoneMatch returns an ETag string if the request contains an
+// If-None-Match header. Otherwise, returns the empty string.
+func (h Headers) IfNoneMatch() string {
+	// There can be multiple matched separated by commas
+	val := h.Header("If-None-Match")
+	if val == "" {
+		return ""
+	}
+	tags := strings.Split(val, ",")
+	etag := strings.Trim(tags[0], `" `)
+	return etag
+}
+
+// IfModifiedSince returns a Time if the request contains an
+// If-Modified-Since header. Otherwise, returns Time's zero value (see
+// Time.IsZero() to detect this, or use Exists("If-Modified-Since")).
+// Note: If-Modified-Since should be ignored if If-None-Match exists:
+// https://datatracker.ietf.org/doc/html/rfc7232#section-3.3
+func (h Headers) IfModifiedSince() time.Time {
+	header := h.Header("If-Modified-Since")
+	if header == "" {
+		return time.Now()
+	}
+	t, err := time.Parse(time.RFC1123, header)
+	if err != nil {
+		// XXX: Log error?
+		return time.Now()
+	}
+	return t
+}
+
+// Ranges returns an array of arrays containing start,end ranges
+// requested from the Range header (in bytes). If the header does not
+// exist, returns an empty array.
+func (h Headers) Ranges() [][2]int {
+	header := h.Header("Range")
+	if !strings.HasPrefix(header, "bytes=") {
+		return [][2]int{}
+	}
+	parts := strings.Split(header[6:], ",")
+	ranges := make([][2]int, len(parts))
+	for i, str := range parts {
+		parts := strings.Split(str, "-")
+		start, err := strconv.Atoi(parts[0])
+		if err != nil {
+			start = -1
+		}
+		end, err := strconv.Atoi(parts[1])
+		if err != nil {
+			end = -1
+		}
+		ranges[i] = [2]int{start, end}
+	}
+	return ranges
 }
