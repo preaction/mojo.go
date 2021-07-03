@@ -1,6 +1,9 @@
 package mojo
 
 import (
+	"fmt"
+	"io"
+	"os"
 	"strings"
 )
 
@@ -52,4 +55,51 @@ func (f File) String() string {
 	// XXX: Use os.PathSeparator
 	// XXX: Add IsAbs
 	return strings.Join(f.path, "/")
+}
+
+// Open returns an io.ReadWriteSeeker for the given file
+func (f File) Open() io.ReadWriteSeeker {
+	reader, err := os.Open(f.String())
+	if err != nil {
+		panic(err)
+	}
+	return reader
+}
+
+// Stat returns info about the current path
+func (f File) Stat() os.FileInfo {
+	info, err := os.Stat(f.String())
+	if err != nil {
+		panic(err)
+	}
+	return info
+}
+
+// TempFile creates a new file in the system's default temp directory
+// and returns the path to that file.
+func TempFile() File {
+	file, err := os.CreateTemp("", "*")
+	if err != nil {
+		panic(fmt.Sprintf("Could not create temp file: %v", err))
+	}
+	// XXX: Automatic clean up?
+	return NewFile(file.Name())
+}
+
+// Slurp reads all data from the file
+func (f File) Slurp() []byte {
+	file := f.Open()
+	buf, err := io.ReadAll(file)
+	if err != nil {
+		panic(fmt.Sprintf("Could not slurp file: %v", err))
+	}
+	return buf
+}
+
+// Spurt writes data to the file, replacing any existing content.
+func (f File) Spurt(buf []byte) {
+	err := os.WriteFile(f.String(), buf, 0666)
+	if err != nil {
+		panic(fmt.Sprintf("Could not spurt file: %v", err))
+	}
 }
