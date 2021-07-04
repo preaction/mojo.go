@@ -2,6 +2,7 @@ package mojo
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
@@ -14,8 +15,17 @@ type Response struct {
 }
 
 // NewResponse returns a new, empty response with sensible defaults.
-func NewResponse() *Response {
-	return &Response{Message: Message{Headers: Headers{}}}
+func NewResponse(opts ...interface{}) *Response {
+	res := &Response{Message: Message{Headers: Headers{}, Content: NewAsset("")}}
+	for _, opt := range opts {
+		switch v := opt.(type) {
+		case http.ResponseWriter:
+			res.Writer = v
+		default:
+			panic(fmt.Sprintf("Unknown option type %T\n", v))
+		}
+	}
+	return res
 }
 
 // JSON encodes the given argument as JSON and updates the response's
@@ -25,6 +35,13 @@ func (res *Response) JSON(data interface{}) {
 	if err != nil {
 		panic(err)
 	}
-	res.Content = string(json)
+	res.Content = NewAsset(json)
 	res.Headers["Content-Type"] = []string{"application/json"}
+}
+
+// Text sets the response's content and updates the Content-Type header
+// to "text/plain"
+func (res *Response) Text(str string) {
+	res.Content = NewAsset(str)
+	res.Headers["Content-Type"] = []string{"text/plain"}
 }

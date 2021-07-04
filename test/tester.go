@@ -31,7 +31,7 @@ func NewTester(t *testing.T, app *mojo.Application) *Tester {
 func NewContext(t *testing.T, opts ...interface{}) *mojo.Context {
 	c := mojo.Context{
 		Req:   mojo.NewRequest("GET", "/"),
-		Res:   &mojo.Response{Writer: httptest.NewRecorder()},
+		Res:   mojo.NewResponse(httptest.NewRecorder()),
 		Stash: map[string]interface{}{},
 	}
 	for _, opt := range opts {
@@ -73,7 +73,7 @@ func (t *Tester) GetOk(path string, name ...string) *Tester {
 	// XXX: Create a server to integration test (and in case we want to
 	// turn Application and Server into interfaces in the future)
 	req := mojo.NewRequest("GET", path)
-	res := &mojo.Response{Writer: httptest.NewRecorder()}
+	res := mojo.NewResponse(httptest.NewRecorder())
 	c := t.App.BuildContext(req, res)
 	t.Context = c
 
@@ -89,6 +89,7 @@ func (t *Tester) GetOk(path string, name ...string) *Tester {
 
 // errorf prints the formatted error and updates the Success flag
 func (t *Tester) errorf(name []string, text string, args ...interface{}) {
+	t.T.Helper()
 	t.T.Errorf("Failed test '%s': %s", name[0], fmt.Sprintf(text, args...))
 	t.Success = false
 }
@@ -119,8 +120,8 @@ func (t *Tester) TextIs(text string, name ...string) *Tester {
 		return t
 	}
 
-	if t.Context.Res.Content != text {
-		t.errorf(name, "Text is not equal:\n\tExpect: %s\n\tGot: %s", text, t.Context.Res.Content)
+	if t.Context.Res.Content.String() != text {
+		t.errorf(name, "Text is not equal:\n\tExpect: %s\n\tGot: %s", text, t.Context.Res.Content.String())
 		return t
 	}
 	t.Success = true

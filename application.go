@@ -55,6 +55,12 @@ func NewApplication() *Application {
 // objects, including setting the default stash values from the
 // Application and any stash values that come from the Request
 func (app *Application) BuildContext(req *Request, res *Response) *Context {
+	if req == nil {
+		req = &Request{}
+	}
+	if res == nil {
+		res = NewResponse()
+	}
 	c := &Context{Req: req, Res: res, App: app, Stash: map[string]interface{}{}}
 
 	// XXX: Add defaults from application
@@ -109,7 +115,7 @@ func (app *Application) Handler(c *Context) {
 		// XXX: Copy response headers
 		c.Res.Writer.WriteHeader(c.Res.Code)
 		// XXX: Build Body from whatever parts we have
-		c.Res.Writer.Write([]byte(c.Res.Content))
+		c.Res.Content.Serve(c.Res.Writer)
 	}
 }
 

@@ -10,7 +10,7 @@ import (
 
 func TestApplication(t *testing.T) {
 	app := mojo.NewApplication()
-	app.Routes.Get("/").To(func(c *mojo.Context) { c.Res.Content = "Hello, World!" })
+	app.Routes.Get("/").To(func(c *mojo.Context) { c.Res.Text("Hello, World!") })
 
 	mt := mojotest.NewTester(t, app)
 	mt.GetOk("/", "Can get root").StatusIs(200)
@@ -20,10 +20,10 @@ func TestApplicationHookBeforeDispatch(t *testing.T) {
 	app := mojo.NewApplication()
 	app.Hook(mojo.BeforeDispatch, func(c *mojo.Context) { c.Stash["who"] = "Mojolicious" })
 	app.Hook(mojo.AfterDispatch, func(c *mojo.Context) {
-		c.Res.Content = fmt.Sprintf("%s\n... and Goodbye!", c.Res.Content)
+		c.Res.Content.AddChunk([]byte("\n... and Goodbye!"))
 	})
 	app.Routes.Get("/").To(func(c *mojo.Context) {
-		c.Res.Content = fmt.Sprintf("Hello, %s!", c.Stash["who"])
+		c.Res.Text(fmt.Sprintf("Hello, %s!", c.Stash["who"]))
 	})
 
 	mt := mojotest.NewTester(t, app)
@@ -41,16 +41,16 @@ func ExampleApplicationHelloWorld() {
 	})
 
 	req := mojo.NewRequest("GET", "/")
-	res := &mojo.Response{}
+	res := mojo.NewResponse()
 	c := app.BuildContext(req, res)
 	app.Handler(c)
-	fmt.Print(c.Res.Content)
+	fmt.Print(c.Res.Content.String())
 
 	req = mojo.NewRequest("GET", "/Gophers")
-	res = &mojo.Response{}
+	res = mojo.NewResponse()
 	c = app.BuildContext(req, res)
 	app.Handler(c)
-	fmt.Print(c.Res.Content)
+	fmt.Print(c.Res.Content.String())
 
 	// Output:
 	// Hello, World!
@@ -89,7 +89,7 @@ func ExampleApplicationJSON() {
 	})
 
 	req := mojo.NewRequest("PUT", "/employee/fry")
-	req.Content = `{"name":"Philip J. Fry","email":"orangejoe@planex.com"}`
+	req.Content = mojo.NewAsset(`{"name":"Philip J. Fry","email":"orangejoe@planex.com"}`)
 	res := mojo.NewResponse()
 	c := app.BuildContext(req, res)
 	app.Handler(c)
@@ -99,7 +99,7 @@ func ExampleApplicationJSON() {
 	res = mojo.NewResponse()
 	c = app.BuildContext(req, res)
 	app.Handler(c)
-	fmt.Printf("%s\n", c.Res.Content)
+	fmt.Printf("%s\n", c.Res.Content.String())
 	fmt.Printf("%s\n", c.Res.Headers.Header("Content-Type"))
 
 	req = mojo.NewRequest("GET", "/employee/bender")

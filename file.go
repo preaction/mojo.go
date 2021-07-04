@@ -59,7 +59,7 @@ func (f File) String() string {
 
 // Open returns an io.ReadWriteSeeker for the given file
 func (f File) Open() io.ReadWriteSeeker {
-	reader, err := os.Open(f.String())
+	reader, err := os.OpenFile(f.String(), os.O_RDWR|os.O_CREATE, 0660)
 	if err != nil {
 		panic(err)
 	}

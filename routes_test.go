@@ -161,20 +161,20 @@ func TestRoutesOptionalPlaceholder(t *testing.T) {
 func TestRoutesUnder(t *testing.T) {
 	passUnder := true
 	handler := func(c *mojo.Context) bool {
-		c.Res.Content = "Under\n"
+		c.Res.Text("Under\n")
 		return passUnder
 	}
 	router := &mojo.Routes{}
 	r := router.Under("/foo", handler)
 	t.Logf("Under route: %+v", r)
-	getr := r.Get("/bar").To(func(c *mojo.Context) { c.Res.Content += "Endpoint\n" })
+	getr := r.Get("/bar").To(func(c *mojo.Context) { c.Res.Content.AddChunk([]byte("Endpoint\n")) })
 	t.Logf("Get route: %+v", getr)
 
 	t.Run("Return true from handler to continue dispatch", func(t *testing.T) {
 		c := mojotest.NewContext(t, mojo.NewRequest("GET", "/foo/bar"))
 		router.Dispatch(c)
-		if c.Res.Content != "Under\nEndpoint\n" {
-			t.Errorf(`Under handler failed to continue dispatch: %#v != "Under\nEndpoint\n"`, c.Res.Content)
+		if c.Res.Content.String() != "Under\nEndpoint\n" {
+			t.Errorf(`Under handler failed to continue dispatch: %s != "Under\nEndpoint\n"`, c.Res.Content.String())
 		}
 	})
 
@@ -183,7 +183,7 @@ func TestRoutesUnder(t *testing.T) {
 		passUnder = false
 		c := mojotest.NewContext(t, mojo.NewRequest("GET", "/foo/bar"))
 		router.Dispatch(c)
-		if c.Res.Content != "Under\n" {
+		if c.Res.Content.String() != "Under\n" {
 			t.Errorf(`Under handler failed to stop dispatch: %#v != "Under\n"`, c.Res.Content)
 		}
 	})

@@ -24,9 +24,9 @@ func TestResponseJSON(t *testing.T) {
 	res := mojo.NewResponse()
 	res.JSON(fry)
 
-	if res.Content == "" {
+	if res.Content.String() == "" {
 		t.Errorf("JSON() left empty content")
-	} else if res.Content != expect {
+	} else if res.Content.String() != expect {
 		t.Errorf("JSON() content incorrect; Expect: %s; Got: %s", expect, res.Content)
 	}
 }

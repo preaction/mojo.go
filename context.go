@@ -39,7 +39,7 @@ func (c *Context) Param(name string) string {
 func (c *Context) Render(templateName string, stash ...Stash) {
 	if templateName != "" {
 		str := c.RenderToString(templateName, stash...)
-		c.Res.Content = str
+		c.Res.Content = NewAsset(str)
 	}
 	// Reserved stashes:
 	// status -> c.Res.Code

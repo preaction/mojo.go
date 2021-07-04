@@ -71,22 +71,24 @@ func (req *Request) EveryParam(name string) []string {
 
 // readBody reads the request body if necessary, caches it in the
 // Request object, and returns it.
-func (req *Request) readContent() string {
-	if req.Content != "" {
+func (req *Request) readContent() Asset {
+	if req.Content != nil {
 		return req.Content
 	}
-	body, err := io.ReadAll(req.raw.Body)
+	// XXX: Make ReaderAsset to read large bodies and write them
+	// temporarily to disk
+	content, err := io.ReadAll(req.raw.Body)
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("Could not read request body: %v", err))
 	}
-	req.Content = string(body)
+	req.Content = NewAsset(content)
 	return req.Content
 }
 
 // JSON reads the request body and unmarshals into the given type
 // pointer. Returns an error if JSON parsing fails.
 func (req *Request) JSON(empty interface{}) error {
-	content := req.readContent()
+	content := req.readContent().String()
 	err := json.Unmarshal([]byte(content), empty)
 	return err
 }
