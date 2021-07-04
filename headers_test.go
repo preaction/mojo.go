@@ -23,11 +23,11 @@ Range: bytes=1-2,-3
 		t.Errorf("Range header not split. Got: %d; Expect: 2", len(r))
 		return
 	}
-	if r[0] != [2]int{1, 2} {
-		t.Errorf("Start/End range not parsed correctly. Got: %#v; Expect: [2]int{1, 2}", r[0])
+	if r[0] != [2]int64{1, 2} {
+		t.Errorf("Start/End range not parsed correctly. Got: %#v; Expect: [2]int64{1, 2}", r[0])
 	}
-	if r[1] != [2]int{-1, 3} {
-		t.Errorf("Start/End range not parsed correctly. Got: %#v; Expect: [2]int{-1, 3}", r[1])
+	if r[1] != [2]int64{-1, 3} {
+		t.Errorf("Start/End range not parsed correctly. Got: %#v; Expect: [2]int64{-1, 3}", r[1])
 	}
 }
 
