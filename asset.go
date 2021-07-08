@@ -3,6 +3,7 @@ package mojo
 import (
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 )
@@ -10,8 +11,8 @@ import (
 // Asset is a container for a Message's contents
 type Asset interface {
 	Length() int64
-	Serve(http.ResponseWriter) error
-	ServeRange(w http.ResponseWriter, start int64, end int64) error
+	Range(start int64, end int64)
+	Serve(w http.ResponseWriter) error
 	String() string
 	AddChunk([]byte)
 }
@@ -21,9 +22,15 @@ type Asset interface {
 func NewAsset(content interface{}) Asset {
 	switch v := content.(type) {
 	case File:
-		return &FileAsset{path: v}
+		return &FileAsset{path: v.String(), file: v.Open()}
 	case *os.File:
-		return &FileAsset{path: NewFile(v.Name())}
+		return &FileAsset{path: v.Name(), file: v}
+	// XXX: If this doesn't support Stat() or Seek(), it's probably not
+	// a real file and should be slurped into a buffer and made into
+	// a MemoryAsset. If `fs.File` ever supports Stat() or Seek(), then
+	// we can remove this restriction.
+	case fs.File:
+		return &FileAsset{file: v}
 	case string:
 		return &MemoryAsset{buffer: []byte(v)}
 	case []byte:
@@ -34,50 +41,78 @@ func NewAsset(content interface{}) Asset {
 
 // FileAsset is an Asset backed by a file on a filesystem
 type FileAsset struct {
-	path File
+	path     string
+	file     fs.File
+	hasRange bool
+	start    int64
+	end      int64
 }
 
 // Length returns the length of the file
 func (asset *FileAsset) Length() int64 {
-	return asset.path.Stat().Size()
+	stat, err := asset.file.Stat()
+	if err != nil {
+		panic(fmt.Sprintf("Could not Stat(): %v", err))
+	}
+	return stat.Size()
 }
 
-// Serve writes the entire file contents to the given http.ResponseWriter
+// Range sets a start/end range to serve partial content
+func (asset *FileAsset) Range(start int64, end int64) {
+	asset.start = start
+	asset.end = end
+	asset.hasRange = start >= 0 || end >= 0
+}
+
+// Serve writes the requested contents to the given http.ResponseWriter
 func (asset *FileAsset) Serve(w http.ResponseWriter) error {
-	// XXX: Go makes us copy/paste because receiver can't be interface?
-	// XXX: Does calculating the length slow this down?
-	return asset.ServeRange(w, 0, asset.Length()-1)
+	file := asset.open()
+	// XXX: Check that all requested was written?
+	_, _ = io.Copy(w, file)
+	return nil
 }
 
-// ServeRange writes the given range to the given http.ResponseWriter.
-// start and end are byte positions of the first and last byte to send,
-// respectively.
-func (asset *FileAsset) ServeRange(w http.ResponseWriter, start int64, end int64) error {
-	file := asset.path.Open()
+// open opens the file to the correct point
+func (asset *FileAsset) open() io.Reader {
+	start := int64(0)
+	end := int64(-1)
+	if asset.hasRange {
+		start = asset.start
+		end = asset.end
+	}
+
+	file := asset.file.(io.ReadSeeker)
 	if _, err := file.Seek(start, io.SeekStart); err != nil {
 		panic(fmt.Sprintf("Could not Seek to %d: %v", start, err))
 	}
-	// XXX: Check that all requested was written?
-	_, _ = io.CopyN(w, file, 1+end-start)
-	return nil
+
+	if end != -1 {
+		return &io.LimitedReader{file, end - start + 1}
+	}
+	return file
 }
 
 // String returns the asset's contents as a string
 func (asset *FileAsset) String() string {
-	content, err := os.ReadFile(asset.path.String())
-	if err != nil {
-		panic(fmt.Sprintf("Could not read file %s: %v", asset.path, err))
-	}
+	content, _ := io.ReadAll(asset.open())
 	return string(content)
 }
 
 // AddChunk adds the given data to the end of the file
 func (asset *FileAsset) AddChunk(data []byte) {
-	file := asset.path.Open()
-	if _, err := file.Seek(0, io.SeekEnd); err != nil {
+	file, ok := asset.file.(io.WriteSeeker)
+	if !ok {
+		var err error
+		file, err = os.OpenFile(asset.path, os.O_APPEND|os.O_WRONLY, 0644)
+		if err != nil {
+			panic(fmt.Sprintf("Could not open file for appending: %v", err))
+		}
+	}
+	_, err := file.Seek(0, io.SeekEnd)
+	if err != nil {
 		panic(fmt.Sprintf("Could not Seek to end: %v", err))
 	}
-	// XXX: Check that all requested was written?
+	// Check that all requested was written
 	bytes, err := file.Write(data)
 	if bytes != len(data) || err != nil {
 		panic(fmt.Sprintf("Error writing %d bytes: %v", len(data), err))
@@ -86,7 +121,10 @@ func (asset *FileAsset) AddChunk(data []byte) {
 
 // MemoryAsset is an Asset stored in memory
 type MemoryAsset struct {
-	buffer []byte
+	buffer   []byte
+	hasRange bool
+	start    int64
+	end      int64
 }
 
 // Length returns the length of the buffer
@@ -94,25 +132,26 @@ func (asset *MemoryAsset) Length() int64 {
 	return int64(len(asset.buffer))
 }
 
-// Serve writes the entire buffer contents to the given http.ResponseWriter
-func (asset *MemoryAsset) Serve(w http.ResponseWriter) error {
-	// XXX: Go makes us copy/paste because receiver can't be interface?
-	// XXX: Does calculating the length slow this down?
-	return asset.ServeRange(w, 0, asset.Length()-1)
+// Range sets a start/end range to serve partial content
+func (asset *MemoryAsset) Range(start int64, end int64) {
+	asset.start = start
+	asset.end = end
+	asset.hasRange = start >= 0 || end >= 0
 }
 
-// ServeRange writes the given range to the given http.ResponseWriter.
-// start and end are byte positions of the first and last byte to send,
-// respectively.
-func (asset *MemoryAsset) ServeRange(w http.ResponseWriter, start int64, end int64) error {
-	_, err := w.Write(asset.buffer[start : end+1])
-	// XXX: Check that all requested was written?
+// Serve writes the requested contents to the given http.ResponseWriter
+func (asset *MemoryAsset) Serve(w http.ResponseWriter) error {
+	_, err := w.Write([]byte(asset.String()))
 	return err
 }
 
 // String returns the asset's contents as a string
 func (asset *MemoryAsset) String() string {
-	return string(asset.buffer)
+	buffer := asset.buffer
+	if asset.hasRange {
+		buffer = buffer[asset.start : asset.end+1]
+	}
+	return string(buffer)
 }
 
 // AddChunk adds the given data to the end of the buffer

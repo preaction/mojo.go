@@ -3,6 +3,7 @@ package test
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -62,6 +63,19 @@ func BuildHTTPRequest(t *testing.T, raw string) *http.Request {
 		t.Fatalf("Could not read request: %v", err)
 	}
 	return req
+}
+
+// ReadHTTPResponse returns the response content from the given test context
+// (see NewContext). It is assumed the internal http.Response is an
+// httptest.ResponseRecorder.
+func ReadHTTPResponse(t *testing.T, c *mojo.Context) (*httptest.ResponseRecorder, []byte) {
+	t.Helper()
+	res := c.Res.Writer.(*httptest.ResponseRecorder)
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		t.Fatalf("Could not read response body: %v", err)
+	}
+	return res, body
 }
 
 // GetOk tries a GET request to the given path. This test passes if the

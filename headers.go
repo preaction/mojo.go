@@ -78,27 +78,25 @@ func (h Headers) IfModifiedSince() time.Time {
 	return t
 }
 
-// Ranges returns an array of arrays containing start,end ranges
-// requested from the Range header (in bytes). If the header does not
-// exist, returns an empty array.
-func (h Headers) Ranges() [][2]int64 {
+// Ranges returns the start and end range requested from the Range
+// header (in bytes). If the header does not exist, returns -1, -1.
+func (h Headers) Range() (int64, int64) {
 	header := h.Header("Range")
 	if !strings.HasPrefix(header, "bytes=") {
-		return [][2]int64{}
+		return -1, -1
 	}
-	parts := strings.Split(header[6:], ",")
-	ranges := make([][2]int64, len(parts))
-	for i, str := range parts {
-		parts := strings.Split(str, "-")
-		start, err := strconv.Atoi(parts[0])
-		if err != nil {
-			start = -1
-		}
-		end, err := strconv.Atoi(parts[1])
-		if err != nil {
-			end = -1
-		}
-		ranges[i] = [2]int64{int64(start), int64(end)}
+	parts := strings.Split(header[6:], "-")
+	var start, end int64
+	if parts[0] == "" {
+		start = -1
+	} else {
+		start, _ = strconv.ParseInt(parts[0], 10, 64)
 	}
-	return ranges
+	if parts[1] == "" {
+		end = -1
+	} else {
+		end, _ = strconv.ParseInt(parts[1], 10, 64)
+	}
+
+	return start, end
 }

@@ -11,23 +11,19 @@ import (
 
 func TestHeadersRanges(t *testing.T) {
 	raw := mojotest.BuildHTTPRequest(t, `GET /foo HTTP/1.1
-Range: bytes=1-2,-3
+Range: bytes=1-2
 
 `)
 
 	req := &mojo.Request{}
 	req.Read(raw)
 
-	r := req.Headers.Ranges()
-	if len(r) != 2 {
-		t.Errorf("Range header not split. Got: %d; Expect: 2", len(r))
-		return
+	start, end := req.Headers.Range()
+	if start != 1 {
+		t.Errorf("Start range not parsed correctly. Got: %d; Expect: 1", start)
 	}
-	if r[0] != [2]int64{1, 2} {
-		t.Errorf("Start/End range not parsed correctly. Got: %#v; Expect: [2]int64{1, 2}", r[0])
-	}
-	if r[1] != [2]int64{-1, 3} {
-		t.Errorf("Start/End range not parsed correctly. Got: %#v; Expect: [2]int64{-1, 3}", r[1])
+	if end != 2 {
+		t.Errorf("End range not parsed correctly. Got: %d; Expect: 2", end)
 	}
 }
 

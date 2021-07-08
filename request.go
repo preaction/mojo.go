@@ -27,7 +27,7 @@ func NewRequest(method string, inputURL string) *Request {
 	if err != nil {
 		panic(fmt.Sprintf("Could not parse URL: %v", err))
 	}
-	return &Request{Method: method, URL: requestURL}
+	return &Request{Method: method, URL: requestURL, Message: *NewMessage()}
 
 }
 

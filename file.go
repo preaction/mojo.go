@@ -3,6 +3,7 @@ package mojo
 import (
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"strings"
 )
@@ -57,8 +58,8 @@ func (f File) String() string {
 	return strings.Join(f.path, "/")
 }
 
-// Open returns an io.ReadWriteSeeker for the given file
-func (f File) Open() io.ReadWriteSeeker {
+// Open returns an fs.File for the given file
+func (f File) Open() fs.File {
 	reader, err := os.OpenFile(f.String(), os.O_RDWR|os.O_CREATE, 0660)
 	if err != nil {
 		panic(err)

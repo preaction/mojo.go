@@ -37,14 +37,18 @@ func TestNewAsset(t *testing.T) {
 	}
 }
 
-func TestMemoryAsset(t *testing.T) {
+func TestMemoryAssetLength(t *testing.T) {
 	buf := []byte(`{"foo":"bar"}`)
 	asset := mojo.NewAsset(buf)
 
 	if asset.Length() != int64(len(buf)) {
 		t.Errorf(`MemoryAsset.Length() incorrect. Got: %d, Expect: %d`, asset.Length(), len(buf))
 	}
+}
 
+func TestMemoryAssetServe(t *testing.T) {
+	buf := []byte(`{"foo":"bar"}`)
+	asset := mojo.NewAsset(buf)
 	w := httptest.NewRecorder()
 	err := asset.Serve(w)
 	if err != nil {
@@ -54,17 +58,11 @@ func TestMemoryAsset(t *testing.T) {
 	if !bytes.Equal(resBody, buf) {
 		t.Errorf(`MemoryAsset.Serve() body incorrect. Got: %s, Expect %s`, resBody, buf)
 	}
+}
 
-	w = httptest.NewRecorder()
-	err = asset.ServeRange(w, 1, 5)
-	if err != nil {
-		t.Errorf(`MemoryAsset.ServeRange() returned error: %v`, err)
-	}
-	resBody = w.Body.Bytes()
-	if !bytes.Equal(resBody, []byte(`"foo"`)) {
-		t.Errorf(`MemoryAsset.ServeRange() body incorrect. Got: %s, Expect %s`, resBody, []byte(`"foo"`))
-	}
-
+func TestMemoryAssetAddChunk(t *testing.T) {
+	buf := []byte(`{"foo":"bar"}`)
+	asset := mojo.NewAsset(buf)
 	asset.AddChunk([]byte("\n"))
 	buf = append(buf, byte('\n'))
 	if asset.String() != string(buf) {
@@ -72,7 +70,22 @@ func TestMemoryAsset(t *testing.T) {
 	}
 }
 
-func TestFileAsset(t *testing.T) {
+func TestMemoryAssetRange(t *testing.T) {
+	buf := []byte(`{"foo":"bar"}`)
+	asset := mojo.NewAsset(buf)
+	w := httptest.NewRecorder()
+	asset.Range(1, 5)
+	err := asset.Serve(w)
+	if err != nil {
+		t.Errorf(`MemoryAsset.Serve() with range returned error: %v`, err)
+	}
+	resBody := w.Body.Bytes()
+	if !bytes.Equal(resBody, []byte(`"foo"`)) {
+		t.Errorf(`MemoryAsset.Serve() with range body incorrect. Got: %s, Expect %s`, resBody, []byte(`"foo"`))
+	}
+}
+
+func TestFileAssetLength(t *testing.T) {
 	buf := []byte(`{"foo":"bar"}`)
 	temp := mojo.TempFile()
 	temp.Spurt(buf)
@@ -81,6 +94,13 @@ func TestFileAsset(t *testing.T) {
 	if asset.Length() != int64(len(buf)) {
 		t.Errorf(`FileAsset.Length() incorrect. Got: %d, Expect: %d`, asset.Length(), len(buf))
 	}
+}
+
+func TestFileAssetServe(t *testing.T) {
+	buf := []byte(`{"foo":"bar"}`)
+	temp := mojo.TempFile()
+	temp.Spurt(buf)
+	asset := mojo.NewAsset(temp)
 
 	w := httptest.NewRecorder()
 	err := asset.Serve(w)
@@ -91,20 +111,35 @@ func TestFileAsset(t *testing.T) {
 	if !bytes.Equal(resBody, buf) {
 		t.Errorf(`FileAsset.Serve() body incorrect. Got: %s, Expect %s`, resBody, buf)
 	}
+}
 
-	w = httptest.NewRecorder()
-	err = asset.ServeRange(w, 1, 5)
-	if err != nil {
-		t.Errorf(`FileAsset.ServeRange() returned error: %v`, err)
-	}
-	resBody = w.Body.Bytes()
-	if !bytes.Equal(resBody, []byte(`"foo"`)) {
-		t.Errorf(`FileAsset.ServeRange() body incorrect. Got: %s, Expect %s`, resBody, []byte(`"foo"`))
-	}
+func TestFileAssetAddChunk(t *testing.T) {
+	buf := []byte(`{"foo":"bar"}`)
+	temp := mojo.TempFile()
+	temp.Spurt(buf)
+	asset := mojo.NewAsset(temp)
 
 	asset.AddChunk([]byte("\n"))
 	buf = append(buf, byte('\n'))
 	if asset.String() != string(buf) {
 		t.Errorf("AddChunk() did not append. Expect: %s; Got: %s", buf, asset.String())
+	}
+}
+
+func TestFileAssetRange(t *testing.T) {
+	buf := []byte(`{"foo":"bar"}`)
+	temp := mojo.TempFile()
+	temp.Spurt(buf)
+	asset := mojo.NewAsset(temp)
+
+	w := httptest.NewRecorder()
+	asset.Range(1, 5)
+	err := asset.Serve(w)
+	if err != nil {
+		t.Errorf(`FileAsset.Serve() with range returned error: %v`, err)
+	}
+	resBody := w.Body.Bytes()
+	if !bytes.Equal(resBody, []byte(`"foo"`)) {
+		t.Errorf(`FileAsset.Serve() with range body incorrect. Got: %s, Expect %s`, resBody, []byte(`"foo"`))
 	}
 }
