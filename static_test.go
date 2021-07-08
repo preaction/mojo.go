@@ -1,8 +1,6 @@
 package mojo_test
 
 import (
-	"crypto/md5"
-	"encoding/base32"
 	"io/fs"
 	"testing"
 	"testing/fstest"
@@ -10,6 +8,7 @@ import (
 
 	"github.com/preaction/mojo.go"
 	mojotest "github.com/preaction/mojo.go/test"
+	"github.com/preaction/mojo.go/util"
 )
 
 func TestStatic(t *testing.T) {
@@ -139,8 +138,7 @@ func TestStaticCacheModifiedSince(t *testing.T) {
 
 func TestStaticCacheETag(t *testing.T) {
 	now := time.Now().Round(0)
-	sum := md5.Sum([]byte(now.Add(-time.Hour).Format(time.RFC3339)))
-	etag := base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(sum[:])
+	etag := util.MD5Sum(now.Add(-time.Hour).Format(time.RFC3339))
 	testfs := fstest.MapFS{
 		"old.txt": &fstest.MapFile{
 			Data:    []byte("Old"),

@@ -1,12 +1,12 @@
 package mojo
 
 import (
-	"crypto/md5"
-	"encoding/base32"
 	"errors"
 	"fmt"
 	"io/fs"
 	"time"
+
+	"github.com/preaction/mojo.go/util"
 )
 
 // APP_START is the time the application was started. This is used by
@@ -59,9 +59,7 @@ func (st *Static) Serve(c *Context, path string) bool {
 		fstat, err := file.Stat()
 		if err == nil {
 			mtime := fstat.ModTime()
-			// XXX: Create an MD5Sum utility method
-			sum := md5.Sum([]byte(mtime.Format(time.RFC3339)))
-			etag := base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(sum[:])
+			etag := util.MD5Sum(mtime.Format(time.RFC3339))
 			if c.Req.Headers.Exists("If-None-Match") && c.Req.Headers.IfNoneMatch() == etag {
 				c.Res.Code = 304
 				return true
