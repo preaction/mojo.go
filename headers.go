@@ -1,6 +1,7 @@
 package mojo
 
 import (
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -70,7 +71,7 @@ func (h Headers) IfModifiedSince() time.Time {
 	if header == "" {
 		return time.Now()
 	}
-	t, err := time.Parse(time.RFC1123, header)
+	t, err := http.ParseTime(header)
 	if err != nil {
 		// XXX: Log error?
 		return time.Now()
