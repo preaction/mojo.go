@@ -45,6 +45,10 @@ func TestStatic(t *testing.T) {
 	if c.Res.Headers.Etag() != etag {
 		t.Errorf("Static dispatch sent incorrect Etag. Got: %s, Expect: %s", c.Res.Headers.Etag(), etag)
 	}
+
+	if c.Res.Headers.Header("Content-Type") != mojo.Types["txt"][0] {
+		t.Errorf("Static dispatch sent incorrect Content-Type. Got: %s, Expect: %s", c.Res.Headers.Header("Content-Type"), mojo.Types["txt"][0])
+	}
 }
 
 func TestStaticPaths(t *testing.T) {

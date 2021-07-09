@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"github.com/preaction/mojo.go/util"
@@ -81,6 +82,14 @@ func (st *Static) Serve(c *Context, path string) bool {
 		c.Res.Headers.Add("Last-Modified", modTime.Format(http.TimeFormat))
 		etag := util.MD5Sum(modTime.Format(http.TimeFormat))
 		c.Res.Headers.Add("Etag", fmt.Sprintf("\"%s\"", etag))
+	}
+	// XXX: Move mojo.File to mojo.Path and start passing them around as
+	// paths instead of strings...
+	if ext := filepath.Ext(path); ext != "" {
+		// ... because Go's idea of a file extension includes the "."
+		if t, ok := Types[ext[1:len(ext)]]; ok {
+			c.Res.Headers.Add("Content-Type", t[0])
+		}
 	}
 
 	// Handle Range request
