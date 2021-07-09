@@ -13,7 +13,7 @@ import "github.com/preaction/mojo.go"
 import "fmt"
 func main() {
 	app := mojo.NewApplication()
-	app.Renderer.AddTemplate("greet", "Hello, <%!.(MISSING)Stash.name %!>(MISSING)!\n")
+	app.Renderer.AddTemplate("greet", "Hello, <% .Stash.name %>!\n")
 	app.Routes.Get( "/:name", mojo.Stash{"name": "World"}).To( GreetHandler )
 	app.Start()
 }
