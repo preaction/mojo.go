@@ -1,7 +1,9 @@
 package mojo_test
 
 import (
+	"fmt"
 	"io/fs"
+	"net/http"
 	"testing"
 	"testing/fstest"
 	"time"
@@ -12,14 +14,18 @@ import (
 )
 
 func TestStatic(t *testing.T) {
+	gmt := time.FixedZone("GMT", 0)
+	expect := time.Date(2999, 12, 31, 23, 30, 0, 0, gmt)
+	etag := util.MD5Sum(expect.Format(http.TimeFormat))
+
 	testfs := fstest.MapFS{
 		"hello.txt": &fstest.MapFile{
-			Data: []byte("Hello, World"),
-			Mode: 0644,
+			Data:    []byte("Hello, World"),
+			Mode:    0644,
+			ModTime: expect,
 		},
 	}
 	s := mojo.Static{Paths: []fs.FS{testfs}}
-	// Test basic response handling
 	c := mojotest.NewContext(t, mojo.NewRequest("GET", "/hello.txt"))
 	served := s.Dispatch(c)
 	if !served {
@@ -30,6 +36,14 @@ func TestStatic(t *testing.T) {
 	}
 	if c.Res.Content.String() != "Hello, World" {
 		t.Errorf("Static dispatch got incorrect file. Got: %s, Expect: %s", c.Res.Content.String(), "Hello, World")
+	}
+
+	if !c.Res.Headers.LastModified().Equal(expect) {
+		t.Errorf("Static dispatch sent incorrect Last-Modified. Got: %s, Expect: %s", c.Res.Headers.LastModified(), expect)
+	}
+
+	if c.Res.Headers.Etag() != etag {
+		t.Errorf("Static dispatch sent incorrect Etag. Got: %s, Expect: %s", c.Res.Headers.Etag(), etag)
 	}
 }
 
@@ -94,7 +108,7 @@ func TestStaticRange(t *testing.T) {
 }
 
 func TestStaticCacheModifiedSince(t *testing.T) {
-	now := time.Now().Round(0)
+	now := time.Now().Round(0).UTC()
 	testfs := fstest.MapFS{
 		"old.txt": &fstest.MapFile{
 			Data:    []byte("Old"),
@@ -110,7 +124,7 @@ func TestStaticCacheModifiedSince(t *testing.T) {
 	s := mojo.Static{Paths: []fs.FS{testfs}}
 
 	c := mojotest.NewContext(t, mojo.NewRequest("GET", "/old.txt"))
-	c.Req.Headers["If-Modified-Since"] = []string{now.Format(time.RFC850)}
+	c.Req.Headers.Add("If-Modified-Since", now.Format(http.TimeFormat))
 	served := s.Dispatch(c)
 	if !served {
 		t.Fatalf("Static dispatch did not serve request")
@@ -123,7 +137,7 @@ func TestStaticCacheModifiedSince(t *testing.T) {
 	}
 
 	c = mojotest.NewContext(t, mojo.NewRequest("GET", "/new.txt"))
-	c.Req.Headers["If-Modified-Since"] = []string{now.Format(time.RFC850)}
+	c.Req.Headers.Add("If-Modified-Since", now.Format(http.TimeFormat))
 	served = s.Dispatch(c)
 	if !served {
 		t.Fatalf("Static dispatch did not serve request")
@@ -136,9 +150,9 @@ func TestStaticCacheModifiedSince(t *testing.T) {
 	}
 }
 
-func TestStaticCacheETag(t *testing.T) {
+func TestStaticCacheEtag(t *testing.T) {
 	now := time.Now().Round(0)
-	etag := util.MD5Sum(now.Add(-time.Hour).Format(time.RFC3339))
+	etag := util.MD5Sum(now.Add(-time.Hour).Format(http.TimeFormat))
 	testfs := fstest.MapFS{
 		"old.txt": &fstest.MapFile{
 			Data:    []byte("Old"),
@@ -154,7 +168,7 @@ func TestStaticCacheETag(t *testing.T) {
 	s := mojo.Static{Paths: []fs.FS{testfs}}
 
 	c := mojotest.NewContext(t, mojo.NewRequest("GET", "/old.txt"))
-	c.Req.Headers["If-None-Match"] = []string{etag}
+	c.Req.Headers.Add("If-None-Match", fmt.Sprintf("\"%s\"", etag))
 	served := s.Dispatch(c)
 	if !served {
 		t.Fatalf("Static dispatch did not serve request")
@@ -167,7 +181,7 @@ func TestStaticCacheETag(t *testing.T) {
 	}
 
 	c = mojotest.NewContext(t, mojo.NewRequest("GET", "/new.txt"))
-	c.Req.Headers["If-None-Match"] = []string{etag}
+	c.Req.Headers.Add("If-None-Match", fmt.Sprintf("\"%s\"", etag))
 	served = s.Dispatch(c)
 	if !served {
 		t.Fatalf("Static dispatch did not serve request")

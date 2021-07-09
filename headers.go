@@ -12,25 +12,23 @@ type Headers map[string][]string
 
 // Exists returns true if the header exists
 func (h Headers) Exists(name string) bool {
-	// XXX: toLower
-	_, ok := h[name]
-	return ok && h[name] != nil
+	canonName := http.CanonicalHeaderKey(name)
+	_, ok := h[canonName]
+	return ok && h[canonName] != nil
 }
 
 // Header returns the first value for the given header, or the empty
 // string if it does not exist.
 func (h Headers) Header(name string) string {
-	// XXX: toLower
 	if !h.Exists(name) {
 		return ""
 	}
-	return h[name][0]
+	return h[http.CanonicalHeaderKey(name)][0]
 }
 
 // EveryHeader returns all values for the given Header, or an empty
 // array if it does not exist
 func (h Headers) EveryHeader(name string) []string {
-	// XXX: toLower
 	if !h.Exists(name) {
 		return []string{}
 	}
@@ -48,6 +46,15 @@ func (h Headers) Pairs() [][2]string {
 	return pairs
 }
 
+// Add adds one or more lines to a header.
+func (h Headers) Add(header string, values ...string) {
+	name := http.CanonicalHeaderKey(header)
+	if _, ok := h[name]; !ok {
+		h[name] = []string{}
+	}
+	h[name] = append(h[name], values...)
+}
+
 // IfNoneMatch returns an ETag string if the request contains an
 // If-None-Match header. Otherwise, returns the empty string.
 func (h Headers) IfNoneMatch() string {
@@ -62,8 +69,9 @@ func (h Headers) IfNoneMatch() string {
 }
 
 // IfModifiedSince returns a Time if the request contains an
-// If-Modified-Since header. Otherwise, returns Time's zero value (see
-// Time.IsZero() to detect this, or use Exists("If-Modified-Since")).
+// If-Modified-Since header. Otherwise, returns time.Now() to prevent
+// a 304 Not Modified response. Use Exists("If-Modified-Since") to
+// detect this header, if needed.
 // Note: If-Modified-Since should be ignored if If-None-Match exists:
 // https://datatracker.ietf.org/doc/html/rfc7232#section-3.3
 func (h Headers) IfModifiedSince() time.Time {
@@ -100,4 +108,29 @@ func (h Headers) Range() (int64, int64) {
 	}
 
 	return start, end
+}
+
+// LastModified returns a Time if the request contains an LastModified
+// header. Otherwise, returns time.Time zero value.  Use time.IsZero()
+// or Exists("If-Modified-Since") to detect this, if needed.
+func (h Headers) LastModified() time.Time {
+	header := h.Header("Last-Modified")
+	if header == "" {
+		return time.Time{}
+	}
+	t, err := http.ParseTime(header)
+	if err != nil {
+		// XXX: Log error?
+		return time.Time{}
+	}
+	return t
+}
+
+// Etag returns the value of any ETag header, or the empty string.
+func (h Headers) Etag() string {
+	etag := h.Header("Etag")
+	if etag == "" {
+		return ""
+	}
+	return strings.Trim(etag, `" `)
 }

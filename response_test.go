@@ -4,12 +4,28 @@ import (
 	"testing"
 
 	"github.com/preaction/mojo.go"
+	mojotest "github.com/preaction/mojo.go/test"
 )
 
 func TestNewResponse(t *testing.T) {
 	res := mojo.NewResponse()
 	if res.Headers == nil {
 		t.Errorf("mojo.NewResponse() did not initialize Headers")
+	}
+}
+
+func TestResponseRead(t *testing.T) {
+	raw := mojotest.BuildHTTPResponse(t, `HTTP/1.1 200 OK
+Content-Length: 5
+
+Hello`)
+	res := mojo.NewResponse()
+	res.Read(raw)
+	if res.Content.String() != "Hello" {
+		t.Errorf("Read() response did not build content asset")
+	}
+	if res.Headers.Header("Content-Length") != "5" {
+		t.Errorf("Read() response did not build headers")
 	}
 }
 

@@ -65,6 +65,17 @@ func BuildHTTPRequest(t *testing.T, raw string) *http.Request {
 	return req
 }
 
+// BuildHTTPResponse builds a new http.Response object from the given
+// raw HTTP response
+func BuildHTTPResponse(t *testing.T, raw string) *http.Response {
+	t.Helper()
+	res, err := http.ReadResponse(bufio.NewReader(strings.NewReader(raw)), nil)
+	if err != nil {
+		t.Fatalf("Could not read response: %v", err)
+	}
+	return res
+}
+
 // ReadHTTPResponse returns the response content from the given test context
 // (see NewContext). It is assumed the internal http.Response is an
 // httptest.ResponseRecorder.

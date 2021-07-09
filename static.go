@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"net/http"
 	"time"
 
 	"github.com/preaction/mojo.go/util"
@@ -59,12 +60,14 @@ func (st *Static) Serve(c *Context, path string) bool {
 		fstat, err := file.Stat()
 		if err == nil {
 			mtime := fstat.ModTime()
-			etag := util.MD5Sum(mtime.Format(time.RFC3339))
+			etag := util.MD5Sum(mtime.Format(http.TimeFormat))
 			if c.Req.Headers.Exists("If-None-Match") && c.Req.Headers.IfNoneMatch() == etag {
 				c.Res.Code = 304
 				return true
 			}
-			if c.Req.Headers.Exists("If-Modified-Since") && c.Req.Headers.IfModifiedSince().After(mtime) {
+
+			cacheTime := c.Req.Headers.IfModifiedSince()
+			if c.Req.Headers.Exists("If-Modified-Since") && cacheTime.After(mtime) {
 				c.Res.Code = 304
 				return true
 			}
@@ -72,6 +75,13 @@ func (st *Static) Serve(c *Context, path string) bool {
 	}
 
 	c.Res.Content = NewAsset(file)
+	fstat, err := file.Stat()
+	if err == nil {
+		modTime := fstat.ModTime().Round(0)
+		c.Res.Headers.Add("Last-Modified", modTime.Format(http.TimeFormat))
+		etag := util.MD5Sum(modTime.Format(http.TimeFormat))
+		c.Res.Headers.Add("Etag", fmt.Sprintf("\"%s\"", etag))
+	}
 
 	// Handle Range request
 	if c.Req.Headers.Exists("Range") {

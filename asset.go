@@ -33,6 +33,10 @@ func NewAsset(content interface{}) Asset {
 		return &FileAsset{file: v}
 	case string:
 		return &MemoryAsset{buffer: []byte(v)}
+	case io.Reader:
+		// XXX: We should probably have an asset that wraps any io.Reader
+		buf, _ := io.ReadAll(v)
+		return &MemoryAsset{buffer: buf}
 	case []byte:
 		return &MemoryAsset{buffer: v}
 	}

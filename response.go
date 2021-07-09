@@ -12,6 +12,7 @@ type Response struct {
 	Writer http.ResponseWriter
 	Code   int
 	Status string
+	raw    *http.Response
 }
 
 // NewResponse returns a new, empty response with sensible defaults.
@@ -26,6 +27,13 @@ func NewResponse(opts ...interface{}) *Response {
 		}
 	}
 	return res
+}
+
+// Read populates this response from the given http.Response
+func (res *Response) Read(raw *http.Response) {
+	res.raw = raw
+	res.Headers = Headers(raw.Header)
+	res.Content = NewAsset(raw.Body)
 }
 
 // JSON encodes the given argument as JSON and updates the response's

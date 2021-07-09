@@ -59,3 +59,40 @@ If-None-Match: acabacab
 		t.Errorf("If-None-Match not parsed correctly Got: %#v; Expect: %#v", etags, expect)
 	}
 }
+
+func TestHeadersLastModified(t *testing.T) {
+	raw := mojotest.BuildHTTPResponse(t, `HTTP/1.1 200 OK
+Last-Modified: Tue, 31 Dec 2999 23:30:00 GMT
+Content-Length: 8
+
+Content
+`)
+
+	res := &mojo.Response{}
+	res.Read(raw)
+
+	modtime := res.Headers.LastModified()
+	gmt := time.FixedZone("GMT", 0)
+	expect := time.Date(2999, 12, 31, 23, 30, 0, 0, gmt)
+	if !expect.Equal(modtime) {
+		t.Errorf("Last-Modified not parsed correctly. Got: %#v; Expect: %#v", modtime, expect)
+	}
+}
+
+func TestHeadersEtag(t *testing.T) {
+	raw := mojotest.BuildHTTPResponse(t, `HTTP/1.1 200 OK 
+ETag: "acabacab"
+Content-Length: 8
+
+Content
+`)
+
+	res := &mojo.Response{}
+	res.Read(raw)
+
+	etags := res.Headers.Etag()
+	expect := "acabacab"
+	if etags != expect {
+		t.Errorf("Etag not parsed correctly Got: %#v; Expect: %#v", etags, expect)
+	}
+}
