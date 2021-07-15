@@ -2,6 +2,7 @@ package mojo
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 )
 
@@ -120,6 +121,7 @@ func (app *Application) emit(hook Hook, c *Context) {
 // Static dispatch and Routes dispatch, and writing the response to the
 // user (if it hasn't been already)
 func (app *Application) Handler(c *Context) {
+	// XXX: Capture panics?
 	app.emit(BeforeDispatch, c)
 	if app.Static.Dispatch(c) {
 		app.emit(AfterStatic, c)
@@ -153,4 +155,13 @@ func (app *Application) Start() {
 		os.Exit(1)
 	}
 	cmd.Run(os.Args[2:])
+}
+
+// ServeHTTP implements the http.Handler interface
+func (app *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	req := &Request{}
+	req.Read(r)
+	res := &Response{Writer: w}
+	c := app.BuildContext(req, res)
+	app.Handler(c)
 }

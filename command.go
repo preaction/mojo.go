@@ -3,6 +3,7 @@ package mojo
 import (
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"path"
 	"sort"
@@ -94,10 +95,7 @@ func (cmd *DaemonCommand) Run(args []string) error {
 		panic(err)
 	}
 	fmt.Printf("Listening on http://%s\n", l.Addr())
-	srv := Server{
-		App: cmd.App,
-	}
-	srv.Serve(l)
+	err = http.Serve(l, cmd.App)
 	return nil
 }
 
