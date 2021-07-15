@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -25,11 +26,19 @@ type Static struct {
 	Paths []fs.FS
 }
 
+// AddPath adds a path to look up files.
+func (st *Static) AddPath(f File) {
+	st.Paths = append([]fs.FS{os.DirFS(f.String())}, st.Paths...)
+}
+
 // Dispatch tries to find a static file to handle the request. Returns
 // true if a static file was found and served.
 func (st *Static) Dispatch(c *Context) bool {
 	// Remove the leading "/"
 	path := c.Req.URL.Path[1:]
+	if path == "" {
+		return false
+	}
 	return st.Serve(c, path)
 }
 

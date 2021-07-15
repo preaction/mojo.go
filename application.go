@@ -10,7 +10,9 @@ import (
 // global application configuration and tools that can be used by those
 // handlers.
 type Application struct {
+	Home     File
 	Routes   Routes
+	Static   *Static
 	Log      Log
 	hooks    map[Hook][]HookHandler
 	Commands map[string]Command
@@ -31,21 +33,39 @@ const (
 	// Application.Dispatch function is called for the current Context
 	BeforeDispatch Hook = "BeforeDispatch"
 	// AfterDispatch is a hook that is called after the
-	// Application.Dispatch function is called for the current Context
+	// request has been dispatched to the Static or Routes dispatcher.
+	// Good for rewriting outgoing responses and other post-processing
+	// tasks.
 	AfterDispatch Hook = "AfterDispatch"
+	// AfterStatic is a hook that is called after the
+	// Static renderer finds a file and prepares a response. Good for
+	// post-processing static file responses.
+	AfterStatic Hook = "AfterDispatch"
 )
 
 // NewApplication builds a basic Mojo application with the default set
 // of commands and (TODO) plugins.
 func NewApplication() *Application {
+	home := os.Getenv("MOJO_HOME")
+	if home == "" {
+		var err error
+		home, err = os.Getwd()
+		if err != nil {
+			panic(fmt.Sprintf("Could not determine app home directory: %s. Set MOJO_HOME to override the default.", err))
+		}
+	}
+
 	app := &Application{
 		Commands: map[string]Command{},
 		Renderer: &GoRenderer{},
 		Log:      NewLog(),
+		Static:   &Static{},
 	}
 	app.Commands["help"] = &HelpCommand{App: app}
 	app.Commands["version"] = &VersionCommand{App: app}
 	app.Commands["daemon"] = &DaemonCommand{App: app}
+	app.Static.AddPath(NewFile(home).Child("public"))
+
 	return app
 }
 
@@ -96,12 +116,16 @@ func (app *Application) emit(hook Hook, c *Context) {
 }
 
 // Handler handles the request for the given Context. This includes
-// dispatching the BeforeDispatch and AfterDispatch hooks and writing
-// the response to the user (if it hasn't been already)
+// dispatching the BeforeDispatch and AfterDispatch hooks, trying the
+// Static dispatch and Routes dispatch, and writing the response to the
+// user (if it hasn't been already)
 func (app *Application) Handler(c *Context) {
-	// Look up route and call handler
 	app.emit(BeforeDispatch, c)
-	app.Routes.Dispatch(c)
+	if app.Static.Dispatch(c) {
+		app.emit(AfterStatic, c)
+	} else {
+		app.Routes.Dispatch(c)
+	}
 	app.emit(AfterDispatch, c)
 
 	// Write the response

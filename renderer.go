@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"io/fs"
+	"os"
 	"strings"
 )
 
@@ -48,6 +49,11 @@ func (ren *GoRenderer) AddTemplate(name string, content string) {
 		ren.templates = map[string]string{}
 	}
 	ren.templates[name] = content
+}
+
+// AddPath adds a path to look up templates.
+func (ren *GoRenderer) AddPath(f File) {
+	ren.fs = append([]fs.FS{os.DirFS(f.String())}, ren.fs...)
 }
 
 // AddFS adds a filesystem to look up templates.

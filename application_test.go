@@ -2,6 +2,7 @@ package mojo_test
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/preaction/mojo.go"
@@ -29,6 +30,25 @@ func TestApplicationHookBeforeDispatch(t *testing.T) {
 	mt := mojotest.NewTester(t, app)
 	mt.GetOk("/", "Can get root").StatusIs(200)
 	mt.TextIs("Hello, Mojolicious!\n... and Goodbye!")
+}
+
+func TestApplicationStatic(t *testing.T) {
+	tmp, err := os.MkdirTemp("", "*")
+	if err != nil {
+		panic(fmt.Sprintf("Could not make tempdir: %v", err))
+	}
+	err = os.WriteFile(tmp+"/hello.txt", []byte("Hello, Gophers!"), 0600)
+	if err != nil {
+		panic(fmt.Sprintf("Could not write file to tempdir: %v", err))
+	}
+
+	app := mojo.NewApplication()
+	app.Routes.Get("/hello.txt").To(func(c *mojo.Context) { c.Res.Text("Hello, World!") })
+	app.Static.AddPath(mojo.NewFile(tmp))
+
+	mt := mojotest.NewTester(t, app)
+	mt.GetOk("/hello.txt", "Can get static file").StatusIs(200)
+	mt.TextIs("Hello, Gophers!", "Static overrides route")
 }
 
 func ExampleApplicationHelloWorld() {
