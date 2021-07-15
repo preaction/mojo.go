@@ -161,7 +161,7 @@ func (app *Application) Start() {
 func (app *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	req := &Request{}
 	req.Read(r)
-	res := &Response{Writer: w}
+	res := NewResponse(w)
 	c := app.BuildContext(req, res)
 	app.Handler(c)
 }

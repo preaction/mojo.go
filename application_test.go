@@ -2,7 +2,10 @@ package mojo_test
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/preaction/mojo.go"
@@ -49,6 +52,19 @@ func TestApplicationStatic(t *testing.T) {
 	mt := mojotest.NewTester(t, app)
 	mt.GetOk("/hello.txt", "Can get static file").StatusIs(200)
 	mt.TextIs("Hello, Gophers!", "Static overrides route")
+}
+
+func TestApplicationServeHTTP(t *testing.T) {
+	app := mojo.NewApplication()
+	app.Routes.Get("/hello.txt").To(func(c *mojo.Context) { c.Res.Text("Hello, World!") })
+
+	req, err := http.NewRequest("GET", "/hello.txt", strings.NewReader(""))
+	if err != nil {
+		t.Fatalf("Could not create HTTP request: %v", err)
+	}
+	res := httptest.NewRecorder()
+
+	app.ServeHTTP(res, req)
 }
 
 func ExampleApplicationHelloWorld() {
