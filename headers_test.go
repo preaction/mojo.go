@@ -96,3 +96,18 @@ Content
 		t.Errorf("Etag not parsed correctly Got: %#v; Expect: %#v", etags, expect)
 	}
 }
+
+func TestHeadersAuthorization(t *testing.T) {
+	raw := mojotest.BuildHTTPRequest(t, `GET /foo HTTP/1.1
+Authorization: Basic QmVuZGVyOnJvY2tz
+
+`)
+	req := &mojo.Request{}
+	req.Read(raw)
+
+	auth := req.Headers.Authorization()
+	expect := "Bender:rocks"
+	if auth != expect {
+		t.Errorf("Authorization not parsed correctly. Got %v; Expect: %v", auth, expect)
+	}
+}

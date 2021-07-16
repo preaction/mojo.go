@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/preaction/mojo.go/util"
 )
 
 // Headers represents HTTP Headers, which are case-insensitive
@@ -133,4 +135,15 @@ func (h Headers) Etag() string {
 		return ""
 	}
 	return strings.Trim(etag, `" `)
+}
+
+// Authorization returns the base64-decoded value of the Authorization
+// header, if any.
+func (h Headers) Authorization() string {
+	raw := h.Header("Authorization")
+	if !strings.HasPrefix(raw, "Basic ") {
+		return ""
+	}
+	encoded := strings.TrimPrefix(raw, "Basic ")
+	return util.B64Decode(encoded)
 }
