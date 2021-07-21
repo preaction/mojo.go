@@ -5,12 +5,11 @@ import (
 	"testing"
 
 	"github.com/preaction/mojo.go"
-	// XXX: Move test -> mojotest
-	mojotest "github.com/preaction/mojo.go/test"
+	"github.com/preaction/mojo.go/testmojo"
 )
 
 func TestRequestRead(t *testing.T) {
-	raw := mojotest.BuildHTTPRequest(t, "GET /foo HTTP/1.1\n\n")
+	raw := testmojo.BuildHTTPRequest(t, "GET /foo HTTP/1.1\n\n")
 
 	req := &mojo.Request{}
 	req.Read(raw)
@@ -26,7 +25,7 @@ func TestRequestRead(t *testing.T) {
 }
 
 func TestRequestReadHeaders(t *testing.T) {
-	raw := mojotest.BuildHTTPRequest(t, `GET /foo HTTP/1.1
+	raw := testmojo.BuildHTTPRequest(t, `GET /foo HTTP/1.1
 Content-Length: 0
 Host: example.com
 
@@ -46,7 +45,7 @@ Host: example.com
 }
 
 func TestRequestFormParams(t *testing.T) {
-	raw := mojotest.BuildHTTPRequest(t, `POST /foo?bar=baz&fizz=no HTTP/1.1
+	raw := testmojo.BuildHTTPRequest(t, `POST /foo?bar=baz&fizz=no HTTP/1.1
 Content-Type: application/x-www-form-urlencoded
 Content-Length: 9
 
@@ -73,7 +72,7 @@ fizz=buzz`)
 }
 
 func TestRequestJSON(t *testing.T) {
-	raw := mojotest.BuildHTTPRequest(t, `POST /foo?bar=baz&fizz=no HTTP/1.1
+	raw := testmojo.BuildHTTPRequest(t, `POST /foo?bar=baz&fizz=no HTTP/1.1
 Content-Type: application/json
 Content-Length: 39
 

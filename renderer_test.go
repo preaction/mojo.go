@@ -6,7 +6,7 @@ import (
 	"testing/fstest"
 
 	"github.com/preaction/mojo.go"
-	mojotest "github.com/preaction/mojo.go/test"
+	"github.com/preaction/mojo.go/testmojo"
 )
 
 func TestGoRendererRender(t *testing.T) {
@@ -25,7 +25,7 @@ func TestGoRendererHelpers(t *testing.T) {
 	})
 	r.AddTemplate("foo", `<% greet .Stash.who %>`)
 
-	c := mojotest.NewContext(t, mojo.Stash{"who": "PHILIP J. FRY"})
+	c := testmojo.NewContext(t, mojo.Stash{"who": "PHILIP J. FRY"})
 	out := r.Render("foo", c)
 	if out != "Hello, PHILIP J. FRY!" {
 		t.Errorf(`Render("foo") failed. Expect: "Hello, PHILIP J. FRY!"; Got: %v`, out)
@@ -40,7 +40,7 @@ func TestGoRendererFS(t *testing.T) {
 	}
 	r := mojo.GoRenderer{}
 	r.AddFS(testFS)
-	c := mojotest.NewContext(t)
+	c := testmojo.NewContext(t)
 	out := r.Render("foo.html.gt", c)
 	if out != "Hello!" {
 		t.Errorf(`Render("foo.html.gt") failed. Expect: "Hello!"; Got: %v`, out)
@@ -64,7 +64,7 @@ func TestGoRendererFSOrder(t *testing.T) {
 	r := mojo.GoRenderer{}
 	r.AddFS(lastFS)
 	r.AddFS(firstFS)
-	c := mojotest.NewContext(t)
+	c := testmojo.NewContext(t)
 	out := r.Render("foo.html.gt", c)
 	if out != "Hello!" {
 		t.Errorf(`Render("foo.html.gt") failed. Expect: "Hello!"; Got: %v`, out)

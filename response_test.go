@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/preaction/mojo.go"
-	mojotest "github.com/preaction/mojo.go/test"
+	"github.com/preaction/mojo.go/testmojo"
 )
 
 func TestNewResponse(t *testing.T) {
@@ -15,7 +15,7 @@ func TestNewResponse(t *testing.T) {
 }
 
 func TestResponseRead(t *testing.T) {
-	raw := mojotest.BuildHTTPResponse(t, `HTTP/1.1 200 OK
+	raw := testmojo.BuildHTTPResponse(t, `HTTP/1.1 200 OK
 Content-Length: 5
 
 Hello`)

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/preaction/mojo.go"
-	mojotest "github.com/preaction/mojo.go/test"
+	"github.com/preaction/mojo.go/testmojo"
 	"github.com/preaction/mojo.go/util"
 )
 
@@ -26,7 +26,7 @@ func TestStatic(t *testing.T) {
 		},
 	}
 	s := mojo.Static{Paths: []fs.FS{testfs}}
-	c := mojotest.NewContext(t, mojo.NewRequest("GET", "/hello.txt"))
+	c := testmojo.NewContext(t, mojo.NewRequest("GET", "/hello.txt"))
 	served := s.Dispatch(c)
 	if !served {
 		t.Fatalf("Static dispatch did not serve request")
@@ -70,7 +70,7 @@ func TestStaticPaths(t *testing.T) {
 	}
 	s := mojo.Static{Paths: []fs.FS{firstfs, secondfs}}
 
-	c := mojotest.NewContext(t, mojo.NewRequest("GET", "/hello.txt"))
+	c := testmojo.NewContext(t, mojo.NewRequest("GET", "/hello.txt"))
 	served := s.Dispatch(c)
 	if !served {
 		t.Fatalf("Static dispatch did not serve request")
@@ -79,7 +79,7 @@ func TestStaticPaths(t *testing.T) {
 		t.Errorf("Static dispatch got incorrect file. Got: %s, Expect: %s", c.Res.Content.String(), "Hello, Gophers")
 	}
 
-	c = mojotest.NewContext(t, mojo.NewRequest("GET", "/robots.txt"))
+	c = testmojo.NewContext(t, mojo.NewRequest("GET", "/robots.txt"))
 	served = s.Dispatch(c)
 	if !served {
 		t.Fatalf("Static dispatch did not serve request")
@@ -97,7 +97,7 @@ func TestStaticRange(t *testing.T) {
 		},
 	}
 	s := mojo.Static{Paths: []fs.FS{testfs}}
-	c := mojotest.NewContext(t, mojo.NewRequest("GET", "/hello.txt"))
+	c := testmojo.NewContext(t, mojo.NewRequest("GET", "/hello.txt"))
 	c.Req.Headers["Range"] = []string{"bytes=0-4"}
 	served := s.Dispatch(c)
 	if !served {
@@ -127,7 +127,7 @@ func TestStaticCacheModifiedSince(t *testing.T) {
 	}
 	s := mojo.Static{Paths: []fs.FS{testfs}}
 
-	c := mojotest.NewContext(t, mojo.NewRequest("GET", "/old.txt"))
+	c := testmojo.NewContext(t, mojo.NewRequest("GET", "/old.txt"))
 	c.Req.Headers.Add("If-Modified-Since", now.Format(http.TimeFormat))
 	served := s.Dispatch(c)
 	if !served {
@@ -140,7 +140,7 @@ func TestStaticCacheModifiedSince(t *testing.T) {
 		t.Errorf("Static dispatch served file: %s", c.Res.Content.String())
 	}
 
-	c = mojotest.NewContext(t, mojo.NewRequest("GET", "/new.txt"))
+	c = testmojo.NewContext(t, mojo.NewRequest("GET", "/new.txt"))
 	c.Req.Headers.Add("If-Modified-Since", now.Format(http.TimeFormat))
 	served = s.Dispatch(c)
 	if !served {
@@ -171,7 +171,7 @@ func TestStaticCacheEtag(t *testing.T) {
 	}
 	s := mojo.Static{Paths: []fs.FS{testfs}}
 
-	c := mojotest.NewContext(t, mojo.NewRequest("GET", "/old.txt"))
+	c := testmojo.NewContext(t, mojo.NewRequest("GET", "/old.txt"))
 	c.Req.Headers.Add("If-None-Match", fmt.Sprintf("\"%s\"", etag))
 	served := s.Dispatch(c)
 	if !served {
@@ -184,7 +184,7 @@ func TestStaticCacheEtag(t *testing.T) {
 		t.Errorf("Static dispatch served file: %s", c.Res.Content.String())
 	}
 
-	c = mojotest.NewContext(t, mojo.NewRequest("GET", "/new.txt"))
+	c = testmojo.NewContext(t, mojo.NewRequest("GET", "/new.txt"))
 	c.Req.Headers.Add("If-None-Match", fmt.Sprintf("\"%s\"", etag))
 	served = s.Dispatch(c)
 	if !served {

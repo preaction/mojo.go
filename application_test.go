@@ -9,14 +9,14 @@ import (
 	"testing"
 
 	"github.com/preaction/mojo.go"
-	mojotest "github.com/preaction/mojo.go/test"
+	"github.com/preaction/mojo.go/testmojo"
 )
 
 func TestApplication(t *testing.T) {
 	app := mojo.NewApplication()
 	app.Routes.Get("/").To(func(c *mojo.Context) { c.Res.Text("Hello, World!") })
 
-	mt := mojotest.NewTester(t, app)
+	mt := testmojo.NewTester(t, app)
 	mt.GetOk("/", "Can get root").StatusIs(200)
 }
 
@@ -30,7 +30,7 @@ func TestApplicationHookBeforeDispatch(t *testing.T) {
 		c.Res.Text(fmt.Sprintf("Hello, %s!", c.Stash["who"]))
 	})
 
-	mt := mojotest.NewTester(t, app)
+	mt := testmojo.NewTester(t, app)
 	mt.GetOk("/", "Can get root").StatusIs(200)
 	mt.TextIs("Hello, Mojolicious!\n... and Goodbye!")
 }
@@ -49,7 +49,7 @@ func TestApplicationStatic(t *testing.T) {
 	app.Routes.Get("/hello.txt").To(func(c *mojo.Context) { c.Res.Text("Hello, World!") })
 	app.Static.AddPath(mojo.NewFile(tmp))
 
-	mt := mojotest.NewTester(t, app)
+	mt := testmojo.NewTester(t, app)
 	mt.GetOk("/hello.txt", "Can get static file").StatusIs(200)
 	mt.TextIs("Hello, Gophers!", "Static overrides route")
 }

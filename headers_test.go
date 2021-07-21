@@ -5,12 +5,11 @@ import (
 	"time"
 
 	"github.com/preaction/mojo.go"
-	// XXX: Move test -> mojotest
-	mojotest "github.com/preaction/mojo.go/test"
+	"github.com/preaction/mojo.go/testmojo"
 )
 
 func TestHeadersRanges(t *testing.T) {
-	raw := mojotest.BuildHTTPRequest(t, `GET /foo HTTP/1.1
+	raw := testmojo.BuildHTTPRequest(t, `GET /foo HTTP/1.1
 Range: bytes=1-2
 
 `)
@@ -28,7 +27,7 @@ Range: bytes=1-2
 }
 
 func TestHeadersIfModifiedSince(t *testing.T) {
-	raw := mojotest.BuildHTTPRequest(t, `GET /foo HTTP/1.1
+	raw := testmojo.BuildHTTPRequest(t, `GET /foo HTTP/1.1
 If-Modified-Since: Tue, 31 Dec 2999 23:30:00 GMT
 
 `)
@@ -45,7 +44,7 @@ If-Modified-Since: Tue, 31 Dec 2999 23:30:00 GMT
 }
 
 func TestHeadersIfNoneMatch(t *testing.T) {
-	raw := mojotest.BuildHTTPRequest(t, `GET /foo HTTP/1.1
+	raw := testmojo.BuildHTTPRequest(t, `GET /foo HTTP/1.1
 If-None-Match: acabacab
 
 `)
@@ -61,7 +60,7 @@ If-None-Match: acabacab
 }
 
 func TestHeadersLastModified(t *testing.T) {
-	raw := mojotest.BuildHTTPResponse(t, `HTTP/1.1 200 OK
+	raw := testmojo.BuildHTTPResponse(t, `HTTP/1.1 200 OK
 Last-Modified: Tue, 31 Dec 2999 23:30:00 GMT
 Content-Length: 8
 
@@ -80,7 +79,7 @@ Content
 }
 
 func TestHeadersEtag(t *testing.T) {
-	raw := mojotest.BuildHTTPResponse(t, `HTTP/1.1 200 OK 
+	raw := testmojo.BuildHTTPResponse(t, `HTTP/1.1 200 OK 
 ETag: "acabacab"
 Content-Length: 8
 
@@ -98,7 +97,7 @@ Content
 }
 
 func TestHeadersAuthorization(t *testing.T) {
-	raw := mojotest.BuildHTTPRequest(t, `GET /foo HTTP/1.1
+	raw := testmojo.BuildHTTPRequest(t, `GET /foo HTTP/1.1
 Authorization: Basic QmVuZGVyOnJvY2tz
 
 `)

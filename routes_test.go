@@ -4,14 +4,14 @@ import (
 	"testing"
 
 	"github.com/preaction/mojo.go"
-	mojotest "github.com/preaction/mojo.go/test"
+	"github.com/preaction/mojo.go/testmojo"
 )
 
 func TestRoutesMatch(t *testing.T) {
 	router := &mojo.Routes{}
 	router.Get("/foo")
 
-	c := mojotest.NewContext(t, mojo.NewRequest("GET", "/foo"))
+	c := testmojo.NewContext(t, mojo.NewRequest("GET", "/foo"))
 	router.Dispatch(c)
 
 	if c.Match == nil {
@@ -28,7 +28,7 @@ func TestRoutesHandler(t *testing.T) {
 	router := &mojo.Routes{}
 	router.Get("/foo").To(handler)
 
-	c := mojotest.NewContext(t, mojo.NewRequest("GET", "/foo"))
+	c := testmojo.NewContext(t, mojo.NewRequest("GET", "/foo"))
 	router.Dispatch(c)
 
 	if !handlerCalled {
@@ -49,7 +49,7 @@ func TestRoutesStash(t *testing.T) {
 	router := &mojo.Routes{}
 	router.Get("/foo", mojo.Stash{"foo": "bar"}).To(handler)
 
-	c := mojotest.NewContext(t, mojo.NewRequest("GET", "/foo"))
+	c := testmojo.NewContext(t, mojo.NewRequest("GET", "/foo"))
 	router.Dispatch(c)
 
 	if !handlerCalled {
@@ -81,7 +81,7 @@ func TestRoutesStandardPlaceholder(t *testing.T) {
 	router := &mojo.Routes{}
 	router.Get("/foo/:name").To(handler)
 
-	c := mojotest.NewContext(t, mojo.NewRequest("GET", "/foo/morbo"))
+	c := testmojo.NewContext(t, mojo.NewRequest("GET", "/foo/morbo"))
 	router.Dispatch(c)
 
 	if !handlerCalled {
@@ -103,7 +103,7 @@ func TestRoutesDelimitedPlaceholder(t *testing.T) {
 	router := &mojo.Routes{}
 	router.Get("/hello_<:name>").To(handler)
 
-	c := mojotest.NewContext(t, mojo.NewRequest("GET", "/hello_world"))
+	c := testmojo.NewContext(t, mojo.NewRequest("GET", "/hello_world"))
 	router.Dispatch(c)
 
 	if !handlerCalled {
@@ -127,7 +127,7 @@ func TestRoutesOptionalPlaceholder(t *testing.T) {
 	router := &mojo.Routes{}
 	router.Get("/foo/:foo", mojo.Stash{"foo": "bar"}).To(handler)
 
-	c := mojotest.NewContext(t, mojo.NewRequest("GET", "/foo/"))
+	c := testmojo.NewContext(t, mojo.NewRequest("GET", "/foo/"))
 	router.Dispatch(c)
 
 	if !handlerCalled {
@@ -149,7 +149,7 @@ func TestRoutesOptionalPlaceholder(t *testing.T) {
 
 	t.Run("Trailing slash is optional", func(t *testing.T) {
 		handlerCalled = false
-		c := mojotest.NewContext(t, mojo.NewRequest("GET", "/foo"))
+		c := testmojo.NewContext(t, mojo.NewRequest("GET", "/foo"))
 		router.Dispatch(c)
 
 		if !handlerCalled {
@@ -171,7 +171,7 @@ func TestRoutesUnder(t *testing.T) {
 	t.Logf("Get route: %+v", getr)
 
 	t.Run("Return true from handler to continue dispatch", func(t *testing.T) {
-		c := mojotest.NewContext(t, mojo.NewRequest("GET", "/foo/bar"))
+		c := testmojo.NewContext(t, mojo.NewRequest("GET", "/foo/bar"))
 		router.Dispatch(c)
 		if c.Res.Content.String() != "Under\nEndpoint\n" {
 			t.Errorf(`Under handler failed to continue dispatch: %s != "Under\nEndpoint\n"`, c.Res.Content.String())
@@ -181,7 +181,7 @@ func TestRoutesUnder(t *testing.T) {
 	t.Run("Return false from handler to stop dispatch", func(t *testing.T) {
 		defer func(val bool) { passUnder = val }(passUnder)
 		passUnder = false
-		c := mojotest.NewContext(t, mojo.NewRequest("GET", "/foo/bar"))
+		c := testmojo.NewContext(t, mojo.NewRequest("GET", "/foo/bar"))
 		router.Dispatch(c)
 		if c.Res.Content.String() != "Under\n" {
 			t.Errorf(`Under handler failed to stop dispatch: %#v != "Under\n"`, c.Res.Content)
@@ -189,7 +189,7 @@ func TestRoutesUnder(t *testing.T) {
 	})
 
 	t.Run("Must match endpoint to find route", func(t *testing.T) {
-		c := mojotest.NewContext(t, mojo.NewRequest("GET", "/foo"))
+		c := testmojo.NewContext(t, mojo.NewRequest("GET", "/foo"))
 		router.Dispatch(c)
 		if c.Res.Code != 404 {
 			t.Errorf(`Incorrectly matched route`)
