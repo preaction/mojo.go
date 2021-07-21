@@ -26,7 +26,7 @@ func GreetHandler( c *mojo.Context ) {
 
 * [mojo](./mojo)
 
-* [test](./test)
+* [testmojo](./testmojo)
 
 * [util](./util)
 
